@@ -1,115 +1,138 @@
 import * as React from 'react';
-import warning from 'warning';
-import { connect } from './connect';
-import {
-  FormikProps,
-  GenericFieldHTMLAttributes,
-  FormikContext,
-} from './types';
-import { getIn, isEmptyChildren, isFunction, isPromise } from './utils';
+import { FormikConsumer } from './context';
+import { Omit } from './types';
+import { isPromise } from './utils';
+import { getFieldBag, commonRenderProps } from './internal';
+import { Formik } from './Formik';
 
-/**
- * Note: These typings could be more restrictive, but then it would limit the
- * reusability of custom <Field/> components.
- *
- * @example
- * interface MyProps {
- *   ...
- * }
- *
- * export const MyInput: React.SFC<MyProps & FieldProps> = ({
- *   field,
- *   form,
- *   ...props
- * }) =>
- *   <div>
- *     <input {...field} {...props}/>
- *     {form.touched[field.name] && form.errors[field.name]}
- *   </div>
- */
-export interface FieldProps<V = any> {
-  field: {
-    /** Classic React change handler, keyed by input name */
-    onChange: (e: React.ChangeEvent<any>) => void;
-    /** Mark input as touched */
-    onBlur: (e: any) => void;
-    /** Value of the input */
-    value: any;
-    /* name of the input */
-    name: string;
-  };
-  form: FormikProps<V>; // if ppl want to restrict this for a given form, let them.
-}
+export namespace Field {
+  export interface CommonMethods {
+    handleChange(e: React.ChangeEvent<any>): void;
+    handleBlur(e: React.ChangeEvent<any>): void;
+  }
 
-export interface FieldConfig {
+  export interface ComponentInterface<Values>
+    extends CommonMethods,
+      React.Component<Field.InnerCommon<Values>> {}
+
   /**
-   * Field component to render. Can either be a string like 'select' or a component.
+   * All props passed down to the custom component / render prop
    */
-  component?:
-    | string
-    | React.ComponentType<FieldProps<any>>
-    | React.ComponentType<void>;
+  export interface Bag<Values> {
+    field: {
+      /** Classic React change handler, keyed by input name */
+      onChange: (e: React.ChangeEvent<any>) => void;
+      /** Mark input as touched */
+      onBlur: (e: any) => void;
+      /** Value of the input */
+      value: any;
+      /* name of the input */
+      name: string;
+    };
+    form: Formik.Props<Values>;
+    meta: {
+      touched: boolean;
+      error: any;
+    };
+  }
+
+  /**
+   * Common interface for all fields, regardless of render method
+   */
+  export type Common = {
+    /**
+     * Field name, required
+     */
+    name: string;
+    /**
+     * Validate a single field value independently
+     */
+    validate?: ((value: any) => string | Promise<void> | undefined);
+    /**
+     * Field type
+     */
+    type?: string;
+
+    /** Field value */
+    value?: any;
+  };
+
+  export interface ImplicitInputComponentProps
+    extends Common,
+      Omit<React.InputHTMLAttributes<HTMLInputElement>, 'name' | 'value'> {
+    innerRef?: (instance: any) => void;
+  }
+
+  export interface InputComponentProps extends ImplicitInputComponentProps {
+    component: 'input';
+  }
+
+  export interface SelectComponentProps
+    extends Common,
+      Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'name' | 'value'> {
+    component: 'select';
+    /** Inner ref */
+    innerRef?: (instance: any) => void;
+  }
+
+  export interface TextareaComponentProps
+    extends Common,
+      Omit<
+        React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+        'name' | 'value'
+      > {
+    component: 'textarea';
+    /** Inner ref */
+    innerRef?: (instance: any) => void;
+  }
+
+  export interface ButtonComponentProps
+    extends Common,
+      Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'name' | 'value'> {
+    component: 'textarea';
+    /** Inner ref */
+    innerRef?: (instance: any) => void;
+  }
 
   /**
    * Render prop (works like React router's <Route render={props =>} />)
    */
-  render?: ((props: FieldProps<any>) => React.ReactNode);
+  export interface RenderFieldProps<V> extends Common {
+    render: ((props: Bag<V>) => React.ReactNode);
+  }
 
-  /**
-   * Children render function <Field name>{props => ...}</Field>)
-   */
-  children?: ((props: FieldProps<any>) => React.ReactNode) | React.ReactNode;
+  export type CustomComponent<V, P = {}> = React.ComponentType<Bag<V> & P>;
 
-  /**
-   * Validate a single field value independently
-   */
-  validate?: ((value: any) => string | Promise<void> | undefined);
+  export interface CustomComponentProps<V, P> extends Common {
+    component: CustomComponent<V, P>;
+  }
 
-  /**
-   * Field name
-   */
-  name: string;
+  export interface InnerCommon<V> extends Common, RenderFieldProps<V> {
+    formik: Formik.Context<V>;
+  }
 
-  /** HTML input type */
-  type?: string;
+  export type DOMNodeFieldProps =
+    | InputComponentProps
+    | SelectComponentProps
+    | TextareaComponentProps
+    | ButtonComponentProps;
 
-  /** Field value */
-  value?: any;
-
-  /** Inner ref */
-  innerRef?: (instance: any) => void;
+  export type Props<V, P> =
+    | DOMNodeFieldProps
+    | RenderFieldProps<V>
+    | (CustomComponentProps<V, P> & P)
+    | ImplicitInputComponentProps;
 }
-
-export type FieldAttributes<T> = GenericFieldHTMLAttributes & FieldConfig & T;
 
 /**
  * Custom Field component for quickly hooking into Formik
  * context and wiring up forms.
  */
-class FieldInner<Props = {}, Values = {}> extends React.Component<
-  FieldAttributes<Props> & { formik: FormikContext<Values> },
-  {}
-> {
-  constructor(
-    props: FieldAttributes<Props> & { formik: FormikContext<Values> }
-  ) {
+class FieldInner<Values> extends React.Component<Field.InnerCommon<Values>>
+  implements Field.CommonMethods {
+  constructor(props: Field.InnerCommon<Values>) {
     super(props);
-
-    const { render, children, component, formik } = props;
-    warning(
-      !(component && render),
-      'You should not use <Field component> and <Field render> in the same <Field> component; <Field component> will be ignored'
-    );
-
-    warning(
-      !(component && children && isFunction(children)),
-      'You should not use <Field component> and <Field children> as a function in the same <Field> component; <Field component> will be ignored.'
-    );
-
-    warning(
-      !(render && children && !isEmptyChildren(children)),
-      'You should not use <Field render> and <Field children> in the same <Field> component; <Field children> will be ignored'
-    );
+    const { formik } = props;
 
     // Register the Field with the parent Formik. Parent will cycle through
     // registered Field's validate fns right prior to submit
@@ -118,9 +141,7 @@ class FieldInner<Props = {}, Values = {}> extends React.Component<
     });
   }
 
-  componentDidUpdate(
-    prevProps: FieldAttributes<Props> & { formik: FormikContext<Values> }
-  ) {
+  componentDidUpdate(prevProps: Field.InnerCommon<Values>) {
     if (this.props.name !== prevProps.name) {
       this.props.formik.unregisterField(prevProps.name);
       this.props.formik.registerField(this.props.name, {
@@ -172,58 +193,17 @@ class FieldInner<Props = {}, Values = {}> extends React.Component<
     }
   };
 
-  render() {
-    const {
-      validate,
-      name,
-      render,
-      children,
-      component = 'input',
-      formik,
-      ...props
-    } = (this.props as FieldAttributes<Props> & {
-      formik: FormikContext<Values>;
-    }) as any;
-    const {
-      validate: _validate,
-      validationSchema: _validationSchema,
-      ...restOfFormik
-    } = formik;
-    const field = {
-      value:
-        props.type === 'radio' || props.type === 'checkbox'
-          ? props.value // React uses checked={} for these inputs
-          : getIn(formik.values, name),
-      name,
-      onChange: validate ? this.handleChange : formik.handleChange,
-      onBlur: validate ? this.handleBlur : formik.handleBlur,
-    };
-    const bag = { field, form: restOfFormik };
-
-    if (render) {
-      return (render as any)(bag);
-    }
-
-    if (isFunction(children)) {
-      return (children as (props: FieldProps<any>) => React.ReactNode)(bag);
-    }
-
-    if (typeof component === 'string') {
-      const { innerRef, ...rest } = props;
-      return React.createElement(component as any, {
-        ref: innerRef,
-        ...field,
-        ...rest,
-        children,
-      });
-    }
-
-    return React.createElement(component as any, {
-      ...bag,
-      ...props,
-      children,
-    });
+  render(): React.ReactNode {
+    return this.props.render(getFieldBag(this));
   }
 }
 
-export const Field = connect<FieldAttributes<any>, any>(FieldInner);
+export function Field<Values, Props>(props: Field.Props<Values, Props>) {
+  return (
+    <FormikConsumer<Values>>
+      {formik => (
+        <FieldInner<Values> {...commonRenderProps(props)} formik={formik} />
+      )}
+    </FormikConsumer>
+  );
+}

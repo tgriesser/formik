@@ -395,29 +395,6 @@ describe('A <FastField />', () => {
       );
     });
 
-    it('warns if both children and render', () => {
-      let output = '';
-
-      (global as any).console = {
-        error: jest.fn(input => (output += input)),
-      };
-
-      ReactDOM.render(
-        <TestForm
-          render={() => (
-            <Field name="name" render={() => <div>{TEXT}</div>}>
-              <div>{TEXT}</div>
-            </Field>
-          )}
-        />,
-        node
-      );
-
-      expect(output).toContain(
-        'Warning: You should not use <FastField render> and <FastField children> in the same <FastField> component; <FastField children> will be ignored'
-      );
-    });
-
     it('renders a child function', () => {
       ReactDOM.render(
         <TestForm

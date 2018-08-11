@@ -1,19 +1,26 @@
 import * as React from 'react';
-import { connect } from './connect';
-import {
-  FormikContext,
-  FormikState,
-  SharedRenderProps,
-  FormikProps,
-} from './types';
-import { getIn, isEmptyChildren, isFunction, setIn } from './utils';
+import { getIn, isFunction, setIn } from './utils';
+import { FormikConsumer } from './context';
+import { Formik } from './Formik';
 
-export type FieldArrayConfig = {
+export type FieldArrayConfig<Values> = {
   /** Really the path to the array field to be updated */
   name: string;
   /** Should field array validate the form AFTER array updates/changes? */
   validateOnChange?: boolean;
-} & SharedRenderProps<ArrayHelpers & { form: FormikProps<any> }>;
+  /**
+   * Field component to render. Can either be a string like 'select' or a component.
+   */
+  component?:
+    | string
+    | React.ComponentType<ArrayHelpers & { form: Formik.Props<Values> }>;
+  /**
+   * Render prop (works like React router's <Route render={props =>} />)
+   */
+  render?: ((
+    props: ArrayHelpers & { form: Formik.Props<Values> }
+  ) => React.ReactNode);
+};
 export interface ArrayHelpers {
   /** Imperatively add a value to the end of an array */
   push: (obj: any) => void;
@@ -80,14 +87,16 @@ export const replace = (array: any[], index: number, value: any) => {
   return copy;
 };
 class FieldArrayInner<Values = {}> extends React.Component<
-  FieldArrayConfig & { formik: FormikContext<Values> },
+  FieldArrayConfig<Values> & { formik: Formik.Context<Values> },
   {}
 > {
   static defaultProps = {
     validateOnChange: true,
   };
 
-  constructor(props: FieldArrayConfig & { formik: FormikContext<Values> }) {
+  constructor(
+    props: FieldArrayConfig<Values> & { formik: Formik.Context<Values> }
+  ) {
     super(props);
     // We need TypeScript generics on these, so we'll bind them in the constructor
     this.remove = this.remove.bind(this);
@@ -105,7 +114,7 @@ class FieldArrayInner<Values = {}> extends React.Component<
       formik: { setFormikState, validateForm, values, touched, errors },
     } = this.props;
     setFormikState(
-      (prevState: FormikState<any>) => ({
+      (prevState: Formik.State<any>) => ({
         ...prevState,
         values: setIn(prevState.values, name, fn(getIn(values, name))),
         errors: alterErrors
@@ -253,7 +262,6 @@ class FieldArrayInner<Values = {}> extends React.Component<
     const {
       component,
       render,
-      children,
       name,
       formik: {
         validate: _validate,
@@ -268,12 +276,14 @@ class FieldArrayInner<Values = {}> extends React.Component<
       ? React.createElement(component as any, props)
       : render
         ? (render as any)(props)
-        : children // children come last, always called
-          ? typeof children === 'function'
-            ? (children as any)(props)
-            : !isEmptyChildren(children) ? React.Children.only(children) : null
-          : null;
+        : null;
   }
 }
 
-export const FieldArray = connect<FieldArrayConfig, any>(FieldArrayInner);
+export function FieldArray<Values>(props: FieldArrayConfig<Values>) {
+  return (
+    <FormikConsumer<Values>>
+      {formik => <FieldArrayInner<Values> {...props} formik={formik} />}
+    </FormikConsumer>
+  );
+}

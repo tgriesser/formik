@@ -48,11 +48,9 @@ const BasicExample = () => (
 
 ### Formik render methods
 
-There are three ways to render things with `<Formik />`
+There is one way to render things with `<Formik />`
 
-* `<Formik component>`
 * `<Formik render>`
-* `<Formik children>`
 
 ### Formik props
 
@@ -187,35 +185,6 @@ Imperatively call your [`validate`] or [`validateSchema`] depending on what was 
 
 Imperatively call field's [`validate`] function if specified for given field. Formik will use the current field value.
 
-### `component`
-
-```tsx
-<Formik component={ContactForm} />;
-
-const ContactForm = ({
-  handleSubmit,
-  handleChange,
-  handleBlur,
-  values,
-  errors,
-}) => (
-  <form onSubmit={handleSubmit}>
-    <input
-      type="text"
-      onChange={handleChange}
-      onBlur={handleBlur}
-      value={values.name}
-      name="name"
-    />
-    {errors.name && <div>{errors.name}</div>}
-    <button type="submit">Submit</button>
-  </form>
-};
-```
-
-**Warning:** `<Formik component>` takes precedence over `<Formik render>` so
-don’t use both in the same `<Formik>`.
-
 ### `render: (props: FormikProps<Values>) => ReactNode`
 
 ```tsx
@@ -239,33 +208,6 @@ don’t use both in the same `<Formik>`.
     </form>
   )}
 />
-```
-
-### `children: func`
-
-```tsx
-<Formik children={props => <ContactForm {...props} />} />
-
-// or...
-
-<Formik>
-  {({ handleSubmit, handleChange, handleBlur, values, errors }) => (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        onChange={handleChange}
-        onBlur={handleBlur}
-        value={values.name}
-        name="name"
-      />
-      {errors.name &&
-        <div>
-          {errors.name}
-        </div>}
-      <button type="submit">Submit</button>
-    </form>
-  )}
-</Formik>
 ```
 
 ### `enableReinitialize?: boolean`
@@ -416,9 +358,7 @@ const Example = () => (
   </div>
 );
 
-const CustomInputComponent: React.SFC<
-  FieldProps<Values> & CustomInputProps
-> = ({
+const CustomInputComponent: React.SFC<FieldProps<CustomInputProps, Values>> = ({
   field, // { name, value, onChange, onBlur }
   form: { touched, errors }, // also values, setXXXX, handleXXXX, dirty, isValid, status, etc.
   ...props
@@ -435,8 +375,7 @@ const CustomInputComponent: React.SFC<
 
 You can run independent field-level validations by passing a function to the
 `validate>` prop. The function will respect the [`validateOnBlur`] and
-[`validateOnChange`] config/props specified in the `<Field>'s` parent `<Formik>`
-/ `withFormik`. This function can be either be:
+[`validateOnChange`] config/props specified in the `<Field>'s` parent `<Formik>`. This function can be either be:
 
 * Synchronous and if invalid, return a `string` containing the error message or
   return `undefined`.
@@ -625,7 +564,7 @@ The following methods are made available via render props.
 
 ### FieldArray render methods
 
-There are three ways to render things with `<FieldArray />`
+There are two ways to render things with `<FieldArray />`
 
 * `<FieldArray name="..." component>`
 * `<FieldArray name="..." render>`
@@ -731,36 +670,6 @@ const MyForm = () => (
   </Form>
 );
 ```
-
-## `withFormik(options)`
-
-Create a higher-order React component class that passes props and form handlers
-(the "`FormikBag`") into your component derived from supplied options.
-
-### `options`
-
-#### `displayName?: string`
-
-When your inner form component is a stateless functional component, you can use
-the `displayName` option to give the component a proper name so you can more
-easily find it in
-[React DevTools](https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi?hl=en).
-If specified, your wrapped form will show up as `Formik(displayName)`. If
-omitted, it will show up as `Formik(Component)`. This option is not required for
-class components (e.g. `class XXXXX extends React.Component {..}`).
-
-#### `enableReinitialize?: boolean`
-
-Default is `false`. Control whether Formik should reset the form if the wrapped
-component props change (using deep equality).
-
-#### `handleSubmit: (values: Values, formikBag: FormikBag) => void`
-
-Your form submission handler. It is passed your forms [`values`] and the
-"FormikBag", which includes an object containing a subset of the
-[injected props and methods](#injected-props-and-methods) (i.e. all the methods
-with names that start with `set<Thing>` + `resetForm`) and any props that were
-passed to the the wrapped component.
 
 #### The "FormikBag":
 

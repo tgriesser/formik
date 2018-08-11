@@ -1,15 +1,15 @@
 import * as React from 'react';
-import { connect } from './connect';
+import { FormikConsumer } from './context';
 
 export type FormikFormProps = Pick<
   React.FormHTMLAttributes<HTMLFormElement>,
   Exclude<keyof React.FormHTMLAttributes<HTMLFormElement>, 'onSubmit'>
 >;
 
-export const Form = connect<FormikFormProps>(
-  ({ formik: { handleSubmit }, ...props }) => (
-    <form onSubmit={handleSubmit} {...props} />
-  )
-);
-
-Form.displayName = 'Form';
+export function Form(props: FormikFormProps) {
+  return (
+    <FormikConsumer>
+      {({ handleSubmit }) => <form onSubmit={handleSubmit} {...props} />}
+    </FormikConsumer>
+  );
+}

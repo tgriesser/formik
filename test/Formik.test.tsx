@@ -263,15 +263,17 @@ describe('<Formik>', () => {
 
       it('should not error if called without an object', () => {
         const FormNoEvent = (
-          <Formik initialValues={{ name: 'jared' }} onSubmit={noop}>
-            {({ handleSubmit }) => (
+          <Formik
+            initialValues={{ name: 'jared' }}
+            onSubmit={noop}
+            render={({ handleSubmit }) => (
               <button
                 onClick={() =>
                   handleSubmit(undefined as any /* undefined event */)
                 }
               />
             )}
-          </Formik>
+          />
         );
         const tree = mount(FormNoEvent);
         const fn = () => {
@@ -282,13 +284,15 @@ describe('<Formik>', () => {
 
       it('should not error if called without preventDefault property', () => {
         const FormNoPreventDefault = (
-          <Formik initialValues={{ name: 'jared' }} onSubmit={noop}>
-            {({ handleSubmit }) => (
+          <Formik
+            initialValues={{ name: 'jared' }}
+            onSubmit={noop}
+            render={({ handleSubmit }) => (
               <button
                 onClick={() => handleSubmit({} as any /* no preventDefault */)}
               />
             )}
-          </Formik>
+          />
         );
         const tree = mount(FormNoPreventDefault);
         const fn = () => {
