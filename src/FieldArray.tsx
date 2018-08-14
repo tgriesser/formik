@@ -1,59 +1,63 @@
 import * as React from 'react';
-import { getIn, isFunction, setIn } from './utils';
+import { getIn, setIn } from './utils';
+import { isFunction } from './internal';
 import { FormikConsumer } from './context';
 import { Formik } from './Formik';
 
-export type FieldArrayConfig<Values> = {
-  /** Really the path to the array field to be updated */
-  name: string;
-  /** Should field array validate the form AFTER array updates/changes? */
-  validateOnChange?: boolean;
-  /**
-   * Field component to render. Can either be a string like 'select' or a component.
-   */
-  component?:
-    | string
-    | React.ComponentType<ArrayHelpers & { form: Formik.Props<Values> }>;
-  /**
-   * Render prop (works like React router's <Route render={props =>} />)
-   */
-  render?: ((
-    props: ArrayHelpers & { form: Formik.Props<Values> }
-  ) => React.ReactNode);
-};
-export interface ArrayHelpers {
-  /** Imperatively add a value to the end of an array */
-  push: (obj: any) => void;
-  /** Curried fn to add a value to the end of an array */
-  handlePush: (obj: any) => () => void;
-  /** Imperatively swap two values in an array */
-  swap: (indexA: number, indexB: number) => void;
-  /** Curried fn to swap two values in an array */
-  handleSwap: (indexA: number, indexB: number) => () => void;
-  /** Imperatively move an element in an array to another index */
-  move: (from: number, to: number) => void;
-  /** Imperatively move an element in an array to another index */
-  handleMove: (from: number, to: number) => () => void;
-  /** Imperatively insert an element at a given index into the array */
-  insert: (index: number, value: any) => void;
-  /** Curried fn to insert an element at a given index into the array */
-  handleInsert: (index: number, value: any) => () => void;
-  /** Imperatively replace a value at an index of an array  */
-  replace: (index: number, value: any) => void;
-  /** Curried fn to replace an element at a given index into the array */
-  handleReplace: (index: number, value: any) => () => void;
-  /** Imperatively add an element to the beginning of an array and return its length */
-  unshift: (value: any) => number;
-  /** Curried fn to add an element to the beginning of an array */
-  handleUnshift: (value: any) => () => void;
-  /** Curried fn to remove an element at an index of an array */
-  handleRemove: (index: number) => () => void;
-  /** Curried fn to remove a value from the end of the array */
-  handlePop: () => () => void;
-  /** Imperatively remove and element at an index of an array */
-  remove<T>(index: number): T | undefined;
-  /** Imperatively remove and return value from the end of the array */
-  pop<T>(): T | undefined;
+export namespace FieldArray {
+  export type Config<Values> = {
+    /** Really the path to the array field to be updated */
+    name: string;
+    /** Should field array validate the form AFTER array updates/changes? */
+    validateOnChange?: boolean;
+    /**
+     * Field component to render. Can either be a string like 'select' or a component.
+     */
+    component?:
+      | string
+      | React.ComponentType<Helpers & { form: Formik.Props<Values> }>;
+    /**
+     * Render prop (works like React router's <Route render={props =>} />)
+     */
+    render?: ((
+      props: Helpers & { form: Formik.Props<Values> }
+    ) => React.ReactNode);
+  };
+
+  export interface Helpers {
+    /** Imperatively add a value to the end of an array */
+    push: (obj: any) => void;
+    /** Curried fn to add a value to the end of an array */
+    handlePush: (obj: any) => () => void;
+    /** Imperatively swap two values in an array */
+    swap: (indexA: number, indexB: number) => void;
+    /** Curried fn to swap two values in an array */
+    handleSwap: (indexA: number, indexB: number) => () => void;
+    /** Imperatively move an element in an array to another index */
+    move: (from: number, to: number) => void;
+    /** Imperatively move an element in an array to another index */
+    handleMove: (from: number, to: number) => () => void;
+    /** Imperatively insert an element at a given index into the array */
+    insert: (index: number, value: any) => void;
+    /** Curried fn to insert an element at a given index into the array */
+    handleInsert: (index: number, value: any) => () => void;
+    /** Imperatively replace a value at an index of an array  */
+    replace: (index: number, value: any) => void;
+    /** Curried fn to replace an element at a given index into the array */
+    handleReplace: (index: number, value: any) => () => void;
+    /** Imperatively add an element to the beginning of an array and return its length */
+    unshift: (value: any) => number;
+    /** Curried fn to add an element to the beginning of an array */
+    handleUnshift: (value: any) => () => void;
+    /** Curried fn to remove an element at an index of an array */
+    handleRemove: (index: number) => () => void;
+    /** Curried fn to remove a value from the end of the array */
+    handlePop: () => () => void;
+    /** Imperatively remove and element at an index of an array */
+    remove<T>(index: number): T | undefined;
+    /** Imperatively remove and return value from the end of the array */
+    pop<T>(): T | undefined;
+  }
 }
 
 /**
@@ -86,8 +90,9 @@ export const replace = (array: any[], index: number, value: any) => {
   copy[index] = value;
   return copy;
 };
-class FieldArrayInner<Values = {}> extends React.Component<
-  FieldArrayConfig<Values> & { formik: Formik.Context<Values> },
+
+class FieldArrayInner<Values = Formik.Values> extends React.Component<
+  FieldArray.Config<Values> & { formik: Formik.Context<Values> },
   {}
 > {
   static defaultProps = {
@@ -95,7 +100,7 @@ class FieldArrayInner<Values = {}> extends React.Component<
   };
 
   constructor(
-    props: FieldArrayConfig<Values> & { formik: Formik.Context<Values> }
+    props: FieldArray.Config<Values> & { formik: Formik.Context<Values> }
   ) {
     super(props);
     // We need TypeScript generics on these, so we'll bind them in the constructor
@@ -240,7 +245,7 @@ class FieldArrayInner<Values = {}> extends React.Component<
   handlePop = () => () => this.pop<any>();
 
   render() {
-    const arrayHelpers: ArrayHelpers = {
+    const Helpers: FieldArray.Helpers = {
       push: this.push,
       pop: this.pop,
       swap: this.swap,
@@ -270,7 +275,7 @@ class FieldArrayInner<Values = {}> extends React.Component<
       },
     } = this.props;
 
-    const props = { ...arrayHelpers, form: restOfFormik, name };
+    const props = { ...Helpers, form: restOfFormik, name };
 
     return component
       ? React.createElement(component as any, props)
@@ -280,7 +285,9 @@ class FieldArrayInner<Values = {}> extends React.Component<
   }
 }
 
-export function FieldArray<Values>(props: FieldArrayConfig<Values>) {
+export function FieldArray<Values = Formik.Values>(
+  props: FieldArray.Config<Values>
+) {
   return (
     <FormikConsumer<Values>>
       {formik => <FieldArrayInner<Values> {...props} formik={formik} />}

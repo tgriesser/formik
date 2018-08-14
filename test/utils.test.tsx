@@ -1,4 +1,5 @@
-import { setIn, setNestedObjectValues, isPromise } from '../src/utils';
+import { setIn, setNestedObjectValues } from '../src/utils';
+import { isPromise } from '../src/internal';
 
 describe('utils', () => {
   describe('setNestedObjectValues', () => {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Formik, FormikProps } from '../src';
+import { Formik } from '../src';
 import { shallow, mount } from '@pisano/enzyme';
 import { sleep, noop } from './testHelpers';
 
@@ -10,7 +10,7 @@ interface Values {
   name: string;
 }
 
-const Form: React.SFC<FormikProps<Values>> = ({
+const Form: React.SFC<Formik.Props<Values>> = ({
   values,
   touched,
   handleSubmit,
@@ -881,6 +881,7 @@ describe('<Formik>', () => {
         initialValues,
         onSubmit: jest.fn(),
         enableReinitialize: true,
+        children: () => null,
       });
       form.resetForm = jest.fn();
     });
@@ -922,6 +923,7 @@ describe('<Formik>', () => {
       form = new Formik({
         initialValues,
         onSubmit: jest.fn(),
+        render: () => null,
       });
       form.resetForm = jest.fn();
       const newInitialValues = {

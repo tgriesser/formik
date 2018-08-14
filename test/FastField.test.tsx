@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 
-import { FastField as Field, FieldProps, Formik, FormikProps } from '../src';
+import { FastField, Formik, FormikProvider, Omit } from '../src';
 
 import { mount } from '@pisano/enzyme';
 import { noop } from './testHelpers';
@@ -11,7 +11,12 @@ interface TestFormValues {
   email: string;
 }
 
-const TestForm: React.SFC<any> = p => (
+type TestOmit = 'onSubmit' | 'initialValues';
+
+const TestForm: React.SFC<
+  | Omit<Formik.ComponentConfig<TestFormValues>, TestOmit>
+  | Omit<Formik.RenderConfig<TestFormValues>, TestOmit>
+> = p => (
   <Formik
     onSubmit={noop}
     initialValues={{ name: 'jared', email: 'hello@reason.nyc' }}
@@ -21,8 +26,12 @@ const TestForm: React.SFC<any> = p => (
 
 describe('A <FastField />', () => {
   describe('<FastField validate>', () => {
-    const makeFieldTree = (props: any) =>
-      mount(<Field.WrappedComponent {...props} />);
+    const makeFieldTree = ({ formik, ...rest }: any) =>
+      mount(
+        <FormikProvider value={formik}>
+          <FastField {...rest} />
+        </FormikProvider>
+      );
 
     it('calls validate during onChange if present', () => {
       const registerField = jest.fn(noop);
@@ -128,7 +137,10 @@ describe('A <FastField />', () => {
     });
 
     it('renders an <input /> by default', () => {
-      ReactDOM.render(<TestForm render={() => <Field name="name" />} />, node);
+      ReactDOM.render(
+        <TestForm render={() => <FastField name="name" />} />,
+        node
+      );
 
       expect((node.firstChild as HTMLInputElement).name).toBe('name');
     });
@@ -137,7 +149,7 @@ describe('A <FastField />', () => {
       const SuperInput = () => <div>{TEXT}</div>;
       ReactDOM.render(
         <TestForm
-          render={() => <Field name="name" component={SuperInput} />}
+          render={() => <FastField name="name" component={SuperInput} />}
         />,
         node
       );
@@ -147,7 +159,9 @@ describe('A <FastField />', () => {
 
     it('renders string components', () => {
       ReactDOM.render(
-        <TestForm render={() => <Field component="textarea" name="name" />} />,
+        <TestForm
+          render={() => <FastField component="textarea" name="name" />}
+        />,
         node
       );
 
@@ -155,16 +169,16 @@ describe('A <FastField />', () => {
     });
 
     it('receives { field, form } props', () => {
-      let actual: any; /** FieldProps<any> ;) */
-      let injected: any; /** FieldProps<any> ;) */
-      const Component: React.SFC<FieldProps<any>> = props =>
+      let actual: any; /** FastField.Props<any> ;) */
+      let injected: any; /** FastField.Props<any> ;) */
+      const Component: React.SFC<FastField.Props<any>> = props =>
         (actual = props) && null;
 
       ReactDOM.render(
         <TestForm
-          render={(formikProps: FormikProps<TestFormValues>) =>
+          render={formikProps =>
             (injected = formikProps) && (
-              <Field name="name" component={Component} />
+              <FastField name="name" component={Component} />
             )
           }
         />,
@@ -183,27 +197,26 @@ describe('A <FastField />', () => {
         unregisterField: noop,
       };
       const tree = mount(
-        <Field.WrappedComponent
-          name="name"
-          innerRef={innerRef}
-          formik={fmk as any}
-        />
+        <FormikProvider value={fmk as any}>
+          <FastField name="name" innerRef={innerRef} />
+        </FormikProvider>
       );
       const element = tree.find('input').instance();
       expect(innerRef).toHaveBeenCalledWith(element);
     });
 
     it('forwards innerRef to React component', () => {
-      let actual: any; /** FieldProps ;) */
-      const Component: React.SFC<FieldProps> = props =>
-        (actual = props) && null;
+      let actual: any;
+      const Component: React.SFC<
+        FastField.Bag & { innerRef: jest.Mock<any> }
+      > = props => (actual = props) && null;
 
       const innerRef = jest.fn();
 
       ReactDOM.render(
         <TestForm
           render={() => (
-            <Field name="name" component={Component} innerRef={innerRef} />
+            <FastField name="name" component={Component} innerRef={innerRef} />
           )}
         />,
         node
@@ -224,7 +237,9 @@ describe('A <FastField />', () => {
     it('renders its return value', () => {
       ReactDOM.render(
         <TestForm
-          render={() => <Field name="name" render={() => <div>{TEXT}</div>} />}
+          render={() => (
+            <FastField name="name" render={() => <div>{TEXT}</div>} />
+          )}
         />,
         node
       );
@@ -235,12 +250,11 @@ describe('A <FastField />', () => {
     it('receives { field, form } props', () => {
       ReactDOM.render(
         <TestForm
-          render={(formikProps: FormikProps<TestFormValues>) => (
-            <Field
+          render={formikProps => (
+            <FastField
               placeholder={placeholder}
               name="name"
-              testingAnArbitraryProp="thing"
-              render={({ field, form }: FieldProps<any>) => {
+              render={({ field, form }) => {
                 expect(field.name).toBe('name');
                 expect(field.value).toBe('jared');
                 expect(form).toEqual(formikProps);
@@ -268,7 +282,7 @@ describe('A <FastField />', () => {
       ReactDOM.render(
         <TestForm
           render={() => (
-            <Field name="name" children={() => <div>{TEXT}</div>} />
+            <FastField name="name" render={() => <div>{TEXT}</div>} />
           )}
         />,
         node
@@ -281,124 +295,11 @@ describe('A <FastField />', () => {
       ReactDOM.render(
         <TestForm
           render={() => (
-            <Field name="name" component="select">
+            <FastField name="name" component="select">
               <option value="Jared" label={TEXT} />
               <option value="Jared" label={TEXT} />
-            </Field>
+            </FastField>
           )}
-        />,
-        node
-      );
-
-      expect(node.innerHTML).toContain(TEXT);
-    });
-
-    it('warns if both string component and children as a function', () => {
-      let output = '';
-
-      (global as any).console = {
-        error: jest.fn(input => (output += input)),
-      };
-
-      ReactDOM.render(
-        <TestForm
-          render={() => (
-            <Field name="name" component="select">
-              {() => <option value="Jared">{TEXT}</option>}
-            </Field>
-          )}
-        />,
-        node
-      );
-
-      expect(output).toContain(
-        'Warning: You should not use <FastField component> and <FastField children> as a function in the same <FastField> component; <FastField component> will be ignored.'
-      );
-    });
-
-    it('warns if both non-string component and children as a function', () => {
-      let output = '';
-      let actual;
-      const Component: React.SFC<FieldProps<any>> = props =>
-        (actual = props) && null;
-
-      (global as any).console = {
-        error: jest.fn(input => (output += input)),
-      };
-
-      ReactDOM.render(
-        <TestForm
-          render={() => (
-            <Field component={Component} name="name">
-              {() => <option value="Jared">{TEXT}</option>}
-            </Field>
-          )}
-        />,
-        node
-      );
-
-      expect(output).toContain(
-        'Warning: You should not use <FastField component> and <FastField children> as a function in the same <FastField> component; <FastField component> will be ignored.'
-      );
-    });
-
-    it('warns if both string component and render', () => {
-      let output = '';
-
-      (global as any).console = {
-        error: jest.fn(input => (output += input)),
-      };
-
-      ReactDOM.render(
-        <TestForm
-          render={() => (
-            <Field
-              component="select"
-              name="name"
-              render={() => <div>{TEXT}</div>}
-            />
-          )}
-        />,
-        node
-      );
-
-      expect(output).toContain(
-        'Warning: You should not use <FastField component> and <FastField render> in the same <FastField> component; <FastField component> will be ignored'
-      );
-    });
-
-    it('warns if both non-string component and render', () => {
-      let output = '';
-      let actual;
-      const Component: React.SFC<FieldProps<any>> = props =>
-        (actual = props) && null;
-
-      (global as any).console = {
-        error: jest.fn(input => (output += input)),
-      };
-
-      ReactDOM.render(
-        <TestForm
-          render={() => (
-            <Field
-              component={Component}
-              name="name"
-              render={() => <div>{TEXT}</div>}
-            />
-          )}
-        />,
-        node
-      );
-
-      expect(output).toContain(
-        'Warning: You should not use <FastField component> and <FastField render> in the same <FastField> component; <FastField component> will be ignored'
-      );
-    });
-
-    it('renders a child function', () => {
-      ReactDOM.render(
-        <TestForm
-          render={() => <Field name="name">{() => <div>{TEXT}</div>}</Field>}
         />,
         node
       );
@@ -409,14 +310,18 @@ describe('A <FastField />', () => {
     it('receives { field, form } props', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<FieldProps<any>> = props =>
+      const Component: React.SFC<FastField.Props<any>> = props =>
         (actual = props) && null;
 
       ReactDOM.render(
         <TestForm
-          children={(formikProps: FormikProps<TestFormValues>) =>
+          render={formikProps =>
             (injected = formikProps) && (
-              <Field name="name" component={Component} placeholder="hello" />
+              <FastField
+                name="name"
+                component={Component}
+                placeholder="hello"
+              />
             )
           }
         />,
@@ -430,15 +335,16 @@ describe('A <FastField />', () => {
     it('can resolve bracket paths', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<FieldProps<any>> = props =>
+      const Component: React.SFC<FastField.Props<any>> = props =>
         (actual = props) && null;
 
       ReactDOM.render(
-        <TestForm
+        <Formik
+          onSubmit={noop}
           initialValues={{ user: { superPowers: ['Surging', 'Binding'] } }}
-          children={(formikProps: FormikProps<TestFormValues>) =>
+          render={formikProps =>
             (injected = formikProps) && (
-              <Field name="user[superPowers][0]" component={Component} />
+              <FastField name="user[superPowers][0]" component={Component} />
             )
           }
         />,
@@ -450,15 +356,16 @@ describe('A <FastField />', () => {
     it('can resolve mixed dot and bracket paths', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<FieldProps<any>> = props =>
+      const Component: React.SFC<FastField.Bag> = props =>
         (actual = props) && null;
 
       ReactDOM.render(
-        <TestForm
+        <Formik
+          onSubmit={noop}
           initialValues={{ user: { superPowers: ['Surging', 'Binding'] } }}
-          children={(formikProps: FormikProps<TestFormValues>) =>
+          render={formikProps =>
             (injected = formikProps) && (
-              <Field name="user.superPowers[1]" component={Component} />
+              <FastField name="user.superPowers[1]" component={Component} />
             )
           }
         />,
@@ -470,15 +377,16 @@ describe('A <FastField />', () => {
     it('can resolve mixed dot and bracket paths II', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<FieldProps<any>> = props =>
+      const Component: React.SFC<FastField.Bag> = props =>
         (actual = props) && null;
 
       ReactDOM.render(
-        <TestForm
+        <Formik
+          onSubmit={noop}
           initialValues={{ user: { superPowers: ['Surging', 'Binding'] } }}
-          children={(formikProps: FormikProps<TestFormValues>) =>
+          render={formikProps =>
             (injected = formikProps) && (
-              <Field name="user[superPowers].1" component={Component} />
+              <FastField name="user[superPowers].1" component={Component} />
             )
           }
         />,

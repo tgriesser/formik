@@ -1,37 +1,36 @@
 import React from 'react';
-import { isString, getIn } from './utils';
+import { getIn, setIn } from './utils';
 import { Field } from './Field';
 import { FastField } from './FastField';
+import { Formik } from './Formik';
 
-export function commonRenderProps<Values>(
-  props: Field.Common & { render?: (bag: Field.Bag<Values>) => React.ReactNode }
-): Field.RenderFieldProps<Values> {
+export function commonRenderProps(
+  props: Field.CommonProps & {
+    render?: (bag: Field.Bag) => React.ReactNode;
+  }
+): Field.RenderFieldProps {
   const { name, validate, type, value } = props;
   const render = props.render
     ? props.render
-    : (bag: Field.Bag<Values>) => internalFieldRenderer<Values>(bag, props);
+    : (bag: Field.Bag) => internalFieldRenderer(bag, props);
   return { name, validate, type, value, render };
 }
 
-function internalFieldRenderer<Values>(
-  bag: Field.Bag<Values>,
-  props: Field.Props<Values, any>
+function internalFieldRenderer<P>(
+  bag: Field.Bag,
+  props: Field.Props<P>
 ): React.ReactNode {
-  if ('component' in props) {
+  if (props.component) {
     if (!isString(props.component)) {
       const {
         component,
         validate,
-        name,
         ...rest
-      } = props as Field.CustomComponentProps<Values, any>;
-      return React.createElement(
-        component as Field.CustomComponent<Values, any>,
-        {
-          ...rest,
-          ...bag,
-        } as any
-      );
+      } = props as Field.CustomComponentProps<P>;
+      return React.createElement(component as React.ComponentType<any>, {
+        ...rest,
+        ...bag,
+      });
     }
     const { innerRef, component, ...rest } = props as Field.DOMNodeFieldProps;
     return React.createElement(component, {
@@ -48,16 +47,16 @@ function internalFieldRenderer<Values>(
   });
 }
 
-type FieldBagComponent<Values> =
-  | Field.ComponentInterface<Values>
-  | FastField.ComponentInterface<Values>;
+type FieldBagComponent =
+  | Field.ComponentInterface
+  | FastField.ComponentInterface;
 
-export function getFieldBag<Values>(
-  component: FieldBagComponent<Values>,
+export function getFieldBag(
+  component: FieldBagComponent,
   fast: boolean = false
-): Field.Bag<Values> {
+): Field.Bag {
   const {
-    props: { type, formik, value },
+    props: { validate, type, formik, value, name },
   } = component;
   const {
     validate: _validate,
@@ -67,23 +66,86 @@ export function getFieldBag<Values>(
   let finalValue = value;
   if (type !== 'radio' && type !== 'checkbox') {
     if (fast) {
-      finalValue = (component as FastField.ComponentInterface<Values>).state
-        .value;
+      finalValue = (component as FastField.ComponentInterface).state.value;
     } else {
       finalValue = getIn(formik.values, name);
     }
   }
   const error = fast
-    ? (component as FastField.ComponentInterface<Values>).state.error
+    ? (component as FastField.ComponentInterface).state.error
     : getIn(formik.errors, name);
   return {
     field: {
       value: finalValue,
       name,
-      onChange: component.handleChange,
-      onBlur: component.handleBlur,
+      onChange: validate ? component.handleChange : formik.handleChange,
+      onBlur: validate ? component.handleBlur : formik.handleBlur,
     },
     form: restOfFormik,
     meta: { touched: getIn(formik.touched, name), error },
   };
 }
+
+/**
+ * Validate a yup schema.
+ */
+export function validateYupSchema<
+  T extends {
+    [field: string]: any;
+  }
+>(
+  values: T,
+  schema: any,
+  sync: boolean = false,
+  context: any = {}
+): Promise<Partial<T>> {
+  let validateData: Partial<T> = {};
+  for (let k in values) {
+    if (values.hasOwnProperty(k)) {
+      const key = String(k);
+      validateData[key] = values[key] !== '' ? values[key] : undefined;
+    }
+  }
+  return schema[sync ? 'validateSync' : 'validate'](validateData, {
+    abortEarly: false,
+    context: context,
+  });
+}
+
+/**
+ * Transform Yup ValidationError to a more usable object
+ */
+export function yupToFormErrors<Values>(yupError: any): Formik.Errors<Values> {
+  let errors: Formik.Errors<Values> = {} as Formik.Errors<Values>;
+  for (let err of yupError.inner) {
+    if (!(errors as any)[err.path]) {
+      errors = setIn(errors, err.path, err.message);
+    }
+  }
+  return errors;
+}
+
+// Assertions
+
+/** @private is the given object a Function? */
+export const isFunction = (obj: any): obj is Function =>
+  typeof obj === 'function';
+
+/** @private is the given object an Object? */
+export const isObject = (obj: any): boolean =>
+  obj !== null && typeof obj === 'object';
+
+/** @private is the given object an integer? */
+export const isInteger = (obj: any): boolean =>
+  String(Math.floor(Number(obj))) === obj;
+
+/** @private is the given object a string? */
+export const isString = (obj: any): obj is string =>
+  Object.prototype.toString.call(obj) === '[object String]';
+
+/** @private is the given object a NaN? */
+export const isNaN = (obj: any): boolean => obj !== obj;
+
+/** @private is the given object/value a promise? */
+export const isPromise = (value: any): value is PromiseLike<any> =>
+  isObject(value) && isFunction(value.then);

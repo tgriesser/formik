@@ -252,7 +252,7 @@ npm install yup --save
       - [`isValidating: boolean`](#isvalidating-boolean)
       - [`resetForm: (nextValues?: Values) => void`](#resetform-nextvalues-values--void)
       - [`setErrors: (fields: { [field: string]: string }) => void`](#seterrors-fields--field-string-string---void)
-      - [`setFieldError: (field: string, errorMsg: string) => void`](#setfielderror-field-string-errormsg-string--void)
+      - [`setFieldError: (field: string, errorMsg: string | undefined) => void`](#setfielderror-field-string-errormsg-string--void)
       - [`setFieldTouched: (field: string, isTouched: boolean, shouldValidate?: boolean) => void`](#setfieldtouched-field-string-istouched-boolean-shouldvalidate-boolean--void)
       - [`submitForm: () => void`](#submitform---void)
       - [`submitCount: number`](#submitcount-number)
@@ -268,7 +268,6 @@ npm install yup --save
     - [`validateField: (field: string) => void`](#validatefield-field-string--void)
     - [`component`](#component)
     - [`render: (props: FormikProps<Values>) => ReactNode`](#render-props-formikpropsvalues--reactnode)
-    - [`children: func`](#children-func)
     - [`enableReinitialize?: boolean`](#enablereinitialize-boolean)
     - [`isInitialValid?: boolean`](#isinitialvalid-boolean)
     - [`initialValues?: Values`](#initialvalues-values)
@@ -694,15 +693,14 @@ const BasicExample = () => (
 
 #### Formik render methods
 
-There are three ways to render things with `<Formik />`
+There are two ways to render things with `<Formik />`
 
 - `<Formik component>`
 - `<Formik render>`
-- `<Formik children>`
 
 #### Formik props
 
-All three render methods will be passed the same props:
+Both render methods will be passed the same props:
 
 ##### `dirty: boolean`
 
@@ -885,33 +883,6 @@ const ContactForm = ({
     </form>
   )}
 />
-```
-
-#### `children: func`
-
-```tsx
-<Formik children={props => <ContactForm {...props} />} />
-
-// or...
-
-<Formik>
-  {({ handleSubmit, handleChange, handleBlur, values, errors }) => (
-    <form onSubmit={handleSubmit}>
-      <input
-        type="text"
-        onChange={handleChange}
-        onBlur={handleBlur}
-        value={values.name}
-        name="name"
-      />
-      {errors.name &&
-        <div>
-          {errors.name}
-        </div>}
-      <button type="submit">Submit</button>
-    </form>
-  )}
-</Formik>
 ```
 
 #### `enableReinitialize?: boolean`

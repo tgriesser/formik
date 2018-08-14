@@ -1,10 +1,16 @@
 import * as React from 'react';
 import isEqual from 'react-fast-compare';
 import { Field } from './Field';
-import { validateYupSchema, yupToFormErrors } from './Formik';
 import { FormikConsumer } from './context';
-import { getIn, isFunction, isPromise, setIn } from './utils';
-import { getFieldBag, commonRenderProps } from './internal';
+import { getIn, setIn } from './utils';
+import {
+  getFieldBag,
+  commonRenderProps,
+  validateYupSchema,
+  yupToFormErrors,
+  isFunction,
+  isPromise,
+} from './internal';
 
 /** @private Returns whether two objects are deeply equal **excluding** a key / dot path */
 function isEqualExceptForKey(a: any, b: any, path: string) {
@@ -15,11 +21,11 @@ function isEqualExceptForKey(a: any, b: any, path: string) {
  * Custom Field component for quickly hooking into Formik
  * context and wiring up forms.
  */
-class FastFieldInner<Values> extends React.Component<
-  FastField.InnerCommon<Values>,
+class FastFieldInner extends React.Component<
+  FastField.InnerCommon,
   FastField.State
 > {
-  constructor(props: FastField.InnerCommon<Values>) {
+  constructor(props: FastField.InnerCommon) {
     super(props);
     this.state = {
       value: getIn(props.formik.values, props.name),
@@ -33,7 +39,7 @@ class FastFieldInner<Values> extends React.Component<
     });
   }
 
-  componentDidUpdate(prevProps: FastField.InnerCommon<Values>) {
+  componentDidUpdate(prevProps: FastField.InnerCommon) {
     const nextFieldValue = getIn(this.props.formik.values, this.props.name);
     const nextFieldError = getIn(this.props.formik.errors, this.props.name);
     const prevFieldValue = getIn(prevProps.formik.values, prevProps.name);
@@ -81,10 +87,10 @@ class FastFieldInner<Values> extends React.Component<
     if (validateOnChange) {
       // Field-level validation
       if (this.props.validate) {
-        const maybePromise = (this.props.validate as any)(value);
+        const maybePromise = this.props.validate(value);
         if (isPromise(maybePromise)) {
           this.setState({ value: val });
-          (maybePromise as any).then(
+          maybePromise.then(
             () => this.setState({ error: undefined }),
             (error: string) => this.setState({ error })
           );
@@ -93,13 +99,11 @@ class FastFieldInner<Values> extends React.Component<
         }
       } else if (validate) {
         // Top-level validate
-        const maybePromise = (validate as any)(
-          setIn(values, this.props.name, val)
-        );
+        const maybePromise = validate(setIn(values, this.props.name, val));
 
         if (isPromise(maybePromise)) {
           this.setState({ value: val });
-          (maybePromise as any).then(
+          maybePromise.then(
             () => this.setState({ error: undefined }),
             (error: any) => {
               // Here we diff the errors object relative to Formik parents except for
@@ -183,9 +187,9 @@ class FastFieldInner<Values> extends React.Component<
 
     // @todo refactor
     if (validateOnBlur && validate) {
-      const maybePromise = (validate as any)(this.state.value);
+      const maybePromise = validate(this.state.value);
       if (isPromise(maybePromise)) {
-        (maybePromise as Promise<any>).then(
+        maybePromise.then(
           () =>
             setFormikState((prevState: any) => ({
               ...prevState,
@@ -224,29 +228,31 @@ class FastFieldInner<Values> extends React.Component<
   }
 
   render(): React.ReactNode {
-    return this.props.render(getFieldBag(this));
+    return this.props.render(getFieldBag(this, true));
   }
 }
 
 export namespace FastField {
-  export interface ComponentInterface<Values>
+  export interface ComponentInterface
     extends Field.CommonMethods,
-      React.Component<InnerCommon<Values>, State> {}
-  export interface InnerCommon<Values> extends Field.InnerCommon<Values> {}
+      React.Component<InnerCommon, State> {}
+  export interface InnerCommon extends Field.InnerCommon {}
   export interface State {
     value: any;
     error?: string;
   }
+  export type Props<P> = Field.Props<P>;
+  export type Bag = Field.Bag;
 }
 
-export function FastField<Values, Props = {}>(
-  props: Field.Props<Values, Props>
-) {
-  return (
-    <FormikConsumer<Values>>
-      {formik => (
-        <FastFieldInner<Values> {...commonRenderProps(props)} formik={formik} />
-      )}
-    </FormikConsumer>
-  );
+export class FastField<P = {}> extends React.Component<FastField.Props<P>> {
+  render() {
+    return (
+      <FormikConsumer>
+        {formik => (
+          <FastFieldInner {...commonRenderProps(this.props)} formik={formik} />
+        )}
+      </FormikConsumer>
+    );
+  }
 }

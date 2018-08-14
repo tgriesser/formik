@@ -3,18 +3,25 @@ import isEqual from 'react-fast-compare';
 import warning from 'warning';
 import deepmerge from 'deepmerge';
 import { FormikProvider } from './context';
+import { setIn, setNestedObjectValues, getActiveElement, getIn } from './utils';
 import {
   isFunction,
   isNaN,
   isPromise,
   isString,
-  setIn,
-  setNestedObjectValues,
-  getActiveElement,
-  getIn,
-} from './utils';
+  validateYupSchema,
+  yupToFormErrors,
+} from './internal';
 
 export namespace Formik {
+  /**
+   * An object containing error messages whose keys correspond to FormikValues.
+   * Should be always be and object of strings, but any is allowed to support i18n libraries.
+   */
+  export type Values = {
+    [field: string]: any;
+  };
+
   /**
    * An object containing error messages whose keys correspond to FormikValues.
    * Should be always be and object of strings, but any is allowed to support i18n libraries.
@@ -75,11 +82,6 @@ export namespace Formik {
   export interface Actions<Values> {
     /** Manually set top level status. */
     setStatus(status?: any): void;
-    /**
-     * Manually set top level error
-     * @deprecated since 0.8.0
-     */
-    setError(e: any): void;
     /** Manually set errors object */
     setErrors(errors: Formik.Errors<Values>): void;
     /** Manually set isSubmitting */
@@ -90,15 +92,18 @@ export namespace Formik {
     setValues(values: Values): void;
     /** Set value of form field directly */
     setFieldValue(
-      field: keyof Values & string,
+      field: Extract<keyof Values, string>,
       value: any,
       shouldValidate?: boolean
     ): void;
     /** Set error message of a form field directly */
-    setFieldError(field: keyof Values & string, message: string): void;
+    setFieldError(
+      field: Extract<keyof Values, string>,
+      message: string | undefined
+    ): void;
     /** Set whether field has been touched directly */
     setFieldTouched(
-      field: keyof Values & string,
+      field: Extract<keyof Values, string>,
       isTouched?: boolean,
       shouldValidate?: boolean
     ): void;
@@ -116,21 +121,6 @@ export namespace Formik {
         prevState: Readonly<State<Values>>,
         props: any
       ) => Pick<State<Values>, K>,
-      callback?: () => any
-    ): void;
-  }
-
-  /** Overloded methods / types */
-  export interface Actions<Values> {
-    /** Set value of form field directly */
-    setFieldValue(field: string, value: any): void;
-    /** Set error message of a form field directly */
-    setFieldError(field: string, message: string): void;
-    /** Set whether field has been touched directly */
-    setFieldTouched(field: string, isTouched?: boolean): void;
-    /** Set Formik state, careful! */
-    setFormikState<K extends keyof State<Values>>(
-      state: Pick<State<Values>, K>,
       callback?: () => any
     ): void;
   }
@@ -203,34 +193,52 @@ export namespace Formik {
     ) => void | object | Promise<Formik.Errors<Values>>);
   }
 
-  export interface ComponentConfig<Values>
+  export interface ComponentConfig<V = Formik.Values>
     extends SharedConfig,
-      CommmonConfig<Values> {
+      CommmonConfig<V> {
     /**
      * Form component to render
      */
-    component: React.ComponentType<Props<Values>>;
+    component: React.ComponentType<Props<V>>;
+    render?: never;
+    children?: React.ReactElement<any>;
   }
 
-  export interface RenderConfig<Values>
+  export interface RenderConfig<V = Formik.Values>
     extends SharedConfig,
-      CommmonConfig<Values> {
+      CommmonConfig<V> {
     /**
      * Render prop (works like React router's <Route render={props =>} />)
      */
-    render: ((props: Props<Values>) => React.ReactNode);
+    render: ((props: Props<V>) => React.ReactNode);
+    component?: never;
+    children?: never;
+  }
+
+  export interface ChildRenderConfig<V = Formik.Values>
+    extends SharedConfig,
+      CommmonConfig<V> {
+    /**
+     * Render prop (works like React router's <Route render={props =>} />)
+     */
+    render?: never;
+    component?: never;
+    children: ((props: Props<V>) => React.ReactNode) | React.ReactNode;
   }
 
   /**
    * <Formik /> props
    */
-  export type Config<Values> = ComponentConfig<Values> & RenderConfig<Values>;
+  export type Config<Values = Formik.Values> =
+    | ComponentConfig<Values>
+    | RenderConfig<Values>
+    | ChildRenderConfig<Values>;
 
   /**
    * State, handlers, and helpers made available to form component or render prop
    * of <Formik/>.
    */
-  export interface Props<Values>
+  export interface Props<Values = Formik.Values>
     extends SharedConfig,
       State<Values>,
       Actions<Values>,
@@ -359,15 +367,6 @@ export class Formik<Values> extends React.Component<
     this.setState({ status });
   };
 
-  setError = (error: any) => {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn(
-        `Warning: Formik\'s setError(error) is deprecated and may be removed in future releases. Please use Formik\'s setStatus(status) instead. It works identically. For more info see https://github.com/jaredpalmer/formik#setstatus-status-any--void`
-      );
-    }
-    this.setState({ error });
-  };
-
   setSubmitting = (isSubmitting: boolean) => {
     this.setState({ isSubmitting });
   };
@@ -440,7 +439,7 @@ export class Formik<Values> extends React.Component<
       if (maybePromisedErrors === undefined) {
         resolve({});
       } else if (isPromise(maybePromisedErrors)) {
-        (maybePromisedErrors as Promise<any>).then(
+        maybePromisedErrors.then(
           () => {
             resolve({});
           },
@@ -737,13 +736,13 @@ export class Formik<Values> extends React.Component<
 
   handleReset = () => {
     if (this.props.onReset) {
-      const maybePromisedOnReset = (this.props.onReset as any)(
+      const maybePromisedOnReset = this.props.onReset(
         this.state.values,
         this.getFormikActions()
       );
 
       if (isPromise(maybePromisedOnReset)) {
-        (maybePromisedOnReset as Promise<any>).then(this.resetForm);
+        maybePromisedOnReset.then(this.resetForm);
       } else {
         this.resetForm();
       }
@@ -761,7 +760,6 @@ export class Formik<Values> extends React.Component<
       submitForm: this.submitForm,
       validateForm: this.runValidations,
       validateField: this.validateField,
-      setError: this.setError,
       setErrors: this.setErrors,
       setFieldError: this.setFieldError,
       setFieldTouched: this.setFieldTouched,
@@ -805,7 +803,7 @@ export class Formik<Values> extends React.Component<
     };
   };
 
-  getFormikContext = (): Formik.Context<any> => {
+  getFormikContext = (): Formik.Context<Values> => {
     return {
       ...this.getFormikBag(),
       validationSchema: this.props.validationSchema,
@@ -817,10 +815,15 @@ export class Formik<Values> extends React.Component<
     const ctx = this.getFormikContext();
     const props = this.getFormikBag();
     let child: React.ReactNode = null;
-    if ('render' in this.props) {
-      child = this.props.render(props);
-    } else {
-      child = React.createElement(this.props.component, props);
+    const { render, children, component } = this.props;
+    if (render) {
+      child = render(props);
+    } else if (component) {
+      child = React.createElement(component, props);
+    } else if (children) {
+      child = isFunction(children)
+        ? children(props)
+        : React.Children.only(children);
     }
     return <FormikProvider value={ctx}>{child}</FormikProvider>;
   }
@@ -843,43 +846,4 @@ function warnAboutMissingIdentifier({
     Formik cannot determine which value to update. For more info see https://github.com/jaredpalmer/formik#${documentationAnchorLink}
   `
   );
-}
-
-/**
- * Transform Yup ValidationError to a more usable object
- */
-export function yupToFormErrors<Values>(yupError: any): Formik.Errors<Values> {
-  let errors: Formik.Errors<Values> = {} as Formik.Errors<Values>;
-  for (let err of yupError.inner) {
-    if (!(errors as any)[err.path]) {
-      errors = setIn(errors, err.path, err.message);
-    }
-  }
-  return errors;
-}
-
-/**
- * Validate a yup schema.
- */
-export function validateYupSchema<
-  T extends {
-    [field: string]: any;
-  }
->(
-  values: T,
-  schema: any,
-  sync: boolean = false,
-  context: any = {}
-): Promise<Partial<T>> {
-  let validateData: Partial<T> = {};
-  for (let k in values) {
-    if (values.hasOwnProperty(k)) {
-      const key = String(k);
-      validateData[key] = values[key] !== '' ? values[key] : undefined;
-    }
-  }
-  return schema[sync ? 'validateSync' : 'validate'](validateData, {
-    abortEarly: false,
-    context: context,
-  });
 }

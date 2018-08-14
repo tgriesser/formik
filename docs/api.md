@@ -1,9 +1,9 @@
 ---
-path: "/docs/api"
-date: "2015-07-01T22:12:03.284Z"
-title: "API Reference"
-description: "Formik API Reference documentation"
-back: "/docs"
+path: '/docs/api'
+date: '2015-07-01T22:12:03.284Z'
+title: 'API Reference'
+description: 'Formik API Reference documentation'
+back: '/docs'
 ---
 
 # API Reference
@@ -50,7 +50,7 @@ const BasicExample = () => (
 
 There is one way to render things with `<Formik />`
 
-* `<Formik render>`
+- `<Formik render>`
 
 ### Formik props
 
@@ -116,7 +116,7 @@ useful for calling `resetForm` within `componentWillReceiveProps`.
 
 Set `errors` imperatively.
 
-#### `setFieldError: (field: string, errorMsg: string) => void`
+#### `setFieldError: (field: string, errorMsg: string | undefined) => void`
 
 Set the error message of a field imperatively. `field` should match the key of
 [`errors`] you wish to update. Useful for creating custom input error handlers.
@@ -275,7 +275,7 @@ const validate = (values, props) => {
 };
 ```
 
-* Asynchronous and return a Promise that's error in an [`errors`] object
+- Asynchronous and return a Promise that's error in an [`errors`] object
 
 ```js
 // Async Validation
@@ -377,7 +377,7 @@ You can run independent field-level validations by passing a function to the
 `validate>` prop. The function will respect the [`validateOnBlur`] and
 [`validateOnChange`] config/props specified in the `<Field>'s` parent `<Formik>`. This function can be either be:
 
-* Synchronous and if invalid, return a `string` containing the error message or
+- Synchronous and if invalid, return a `string` containing the error message or
   return `undefined`.
 
 ```js
@@ -391,11 +391,11 @@ const validate = value => {
 };
 ```
 
-* async: Return a Promise that throws a `string` containing the error message.
+- async: Return a Promise that throws a `string` containing the error message.
   This works like Formik's [`validate`], but instead of returning an [`errors`]
   object, it's just a `string`.
 
-* Asynchronous and return a Promise that's error is an string with the error
+- Asynchronous and return a Promise that's error is an string with the error
   message
 
 ```js
@@ -554,20 +554,20 @@ _NOTE_: In Formik v0.12 / 1.0, a new `meta` prop may be be added to `Field` and 
 
 The following methods are made available via render props.
 
-* `push: (obj: any) => void`: Add a value to the end of an array
-* `swap: (indexA: number, indexB: number) => void`: Swap two values in an array
-* `move: (from: number, to: number) => void`: Move an element in an array to another index
-* `insert: (index: number, value: any) => void`: Insert an element at a given index into the array
-* `unshift: (value: any) => number`: Add an element to the beginning of an array and return its length
-* `remove<T>(index: number): T | undefined`: Remove an element at an index of an array and return it
-* `pop<T>(): T | undefined`: Remove and return value from the end of the array
+- `push: (obj: any) => void`: Add a value to the end of an array
+- `swap: (indexA: number, indexB: number) => void`: Swap two values in an array
+- `move: (from: number, to: number) => void`: Move an element in an array to another index
+- `insert: (index: number, value: any) => void`: Insert an element at a given index into the array
+- `unshift: (value: any) => number`: Add an element to the beginning of an array and return its length
+- `remove<T>(index: number): T | undefined`: Remove an element at an index of an array and return it
+- `pop<T>(): T | undefined`: Remove and return value from the end of the array
 
 ### FieldArray render methods
 
 There are two ways to render things with `<FieldArray />`
 
-* `<FieldArray name="..." component>`
-* `<FieldArray name="..." render>`
+- `<FieldArray name="..." component>`
+- `<FieldArray name="..." render>`
 
 #### `render: (arrayHelpers: ArrayHelpers) => React.ReactNode`
 
@@ -673,16 +673,16 @@ const MyForm = () => (
 
 #### The "FormikBag":
 
-* `props` (props passed to the wrapped component)
-* [`resetForm`]
-* [`setErrors`]
-* [`setFieldError`]
-* [`setFieldTouched`]
-* [`setFieldValue`]
-* [`setStatus`]
-* [`setSubmitting`]
-* [`setTouched`]
-* [`setValues`]
+- `props` (props passed to the wrapped component)
+- [`resetForm`]
+- [`setErrors`]
+- [`setFieldError`]
+- [`setFieldTouched`]
+- [`setFieldValue`]
+- [`setStatus`]
+- [`setSubmitting`]
+- [`setTouched`]
+- [`setValues`]
 
 Note: [`errors`], [`touched`], [`status`] and all event handlers are NOT
 included in the `FormikBag`.
@@ -731,7 +731,7 @@ const validate = (values, props) => {
 };
 ```
 
-* Asynchronous and return a Promise that's error is an [`errors`] object
+- Asynchronous and return a Promise that's error is an [`errors`] object
 
 ```js
 // Async Validation

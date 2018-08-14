@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { FormikConsumer } from './context';
 import { Omit } from './types';
-import { isPromise } from './utils';
-import { getFieldBag, commonRenderProps } from './internal';
+import { isPromise, getFieldBag, commonRenderProps } from './internal';
 import { Formik } from './Formik';
 
 export namespace Field {
@@ -11,14 +10,14 @@ export namespace Field {
     handleBlur(e: React.ChangeEvent<any>): void;
   }
 
-  export interface ComponentInterface<Values>
+  export interface ComponentInterface
     extends CommonMethods,
-      React.Component<Field.InnerCommon<Values>> {}
+      React.Component<Field.InnerCommon> {}
 
   /**
    * All props passed down to the custom component / render prop
    */
-  export interface Bag<Values> {
+  export interface Bag<Values extends object = any> {
     field: {
       /** Classic React change handler, keyed by input name */
       onChange: (e: React.ChangeEvent<any>) => void;
@@ -39,7 +38,7 @@ export namespace Field {
   /**
    * Common interface for all fields, regardless of render method
    */
-  export type Common = {
+  export type CommonProps = {
     /**
      * Field name, required
      */
@@ -58,57 +57,82 @@ export namespace Field {
   };
 
   export interface ImplicitInputComponentProps
-    extends Common,
+    extends CommonProps,
       Omit<React.InputHTMLAttributes<HTMLInputElement>, 'name' | 'value'> {
     innerRef?: (instance: any) => void;
+    component?: never;
+    render?: never;
   }
 
-  export interface InputComponentProps extends ImplicitInputComponentProps {
+  export interface InputComponentProps
+    extends CommonProps,
+      Omit<React.InputHTMLAttributes<HTMLInputElement>, 'name' | 'value'> {
+    /** Inner ref */
+    innerRef?: (instance: any) => void;
+    render?: never;
     component: 'input';
   }
 
   export interface SelectComponentProps
-    extends Common,
+    extends CommonProps,
       Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'name' | 'value'> {
-    component: 'select';
     /** Inner ref */
     innerRef?: (instance: any) => void;
+    render?: never;
+    component: 'select';
   }
 
   export interface TextareaComponentProps
-    extends Common,
+    extends CommonProps,
       Omit<
         React.TextareaHTMLAttributes<HTMLTextAreaElement>,
         'name' | 'value'
       > {
-    component: 'textarea';
     /** Inner ref */
     innerRef?: (instance: any) => void;
+    render?: never;
+    component: 'textarea';
   }
 
   export interface ButtonComponentProps
-    extends Common,
+    extends CommonProps,
       Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'name' | 'value'> {
-    component: 'textarea';
+    render?: never;
     /** Inner ref */
     innerRef?: (instance: any) => void;
+    component: 'button';
   }
 
   /**
    * Render prop (works like React router's <Route render={props =>} />)
    */
-  export interface RenderFieldProps<V> extends Common {
-    render: ((props: Bag<V>) => React.ReactNode);
+  export interface RenderFieldProps extends CommonProps {
+    innerRef?: never;
+    component?: never;
+    render: ((props: Field.Bag) => React.ReactNode);
+    children?: never;
   }
 
-  export type CustomComponent<V, P = {}> = React.ComponentType<Bag<V> & P>;
-
-  export interface CustomComponentProps<V, P> extends Common {
-    component: CustomComponent<V, P>;
+  /**
+   * Render prop (works like React router's <Route render={props =>} />)
+   */
+  export interface ChildRenderFieldProps extends CommonProps {
+    innerRef?: never;
+    render?: never;
+    component?: never;
+    children: ((props: Field.Bag) => React.ReactNode);
   }
 
-  export interface InnerCommon<V> extends Common, RenderFieldProps<V> {
-    formik: Formik.Context<V>;
+  export interface CustomComponentProps<P = {}> extends CommonProps {
+    // innerRef shouldn't be valid unless it's explicitly defined in the custom component.
+    innerRef?: P extends { innerRef: any } ? P['innerRef'] : never;
+    render?: never;
+    component: React.ComponentType<Field.Bag & P>;
+    children?: React.ReactNode | React.ReactNode[];
+  }
+
+  export interface InnerCommon extends CommonProps, RenderFieldProps {
+    formik: Formik.Context<any>;
   }
 
   export type DOMNodeFieldProps =
@@ -117,10 +141,11 @@ export namespace Field {
     | TextareaComponentProps
     | ButtonComponentProps;
 
-  export type Props<V, P> =
+  export type Props<P> =
+    | RenderFieldProps
+    | ChildRenderFieldProps
+    | (CustomComponentProps<P> & P)
     | DOMNodeFieldProps
-    | RenderFieldProps<V>
-    | (CustomComponentProps<V, P> & P)
     | ImplicitInputComponentProps;
 }
 
@@ -128,9 +153,9 @@ export namespace Field {
  * Custom Field component for quickly hooking into Formik
  * context and wiring up forms.
  */
-class FieldInner<Values> extends React.Component<Field.InnerCommon<Values>>
+class FieldInner extends React.Component<Field.InnerCommon>
   implements Field.CommonMethods {
-  constructor(props: Field.InnerCommon<Values>) {
+  constructor(props: Field.InnerCommon) {
     super(props);
     const { formik } = props;
 
@@ -141,7 +166,7 @@ class FieldInner<Values> extends React.Component<Field.InnerCommon<Values>>
     });
   }
 
-  componentDidUpdate(prevProps: Field.InnerCommon<Values>) {
+  componentDidUpdate(prevProps: Field.InnerCommon) {
     if (this.props.name !== prevProps.name) {
       this.props.formik.unregisterField(prevProps.name);
       this.props.formik.registerField(this.props.name, {
@@ -179,17 +204,19 @@ class FieldInner<Values> extends React.Component<Field.InnerCommon<Values>>
   runFieldValidations = (value: any) => {
     const { setFieldError } = this.props.formik;
     const { name, validate } = this.props;
-    // Call validate fn
-    const maybePromise = (validate as any)(value);
-    // Check if validate it returns a Promise
-    if (isPromise(maybePromise)) {
-      (maybePromise as Promise<any>).then(
-        () => setFieldError(name, undefined as any),
-        error => setFieldError(name, error)
-      );
-    } else {
-      // Otherwise set the error
-      setFieldError(name, maybePromise);
+    if (validate) {
+      // Call validate fn
+      const maybePromise = validate(value);
+      // Check if validate it returns a Promise
+      if (isPromise(maybePromise)) {
+        maybePromise.then(
+          () => setFieldError(name, undefined as any),
+          error => setFieldError(name, error)
+        );
+      } else {
+        // Otherwise set the error
+        setFieldError(name, maybePromise);
+      }
     }
   };
 
@@ -198,12 +225,14 @@ class FieldInner<Values> extends React.Component<Field.InnerCommon<Values>>
   }
 }
 
-export function Field<Values, Props>(props: Field.Props<Values, Props>) {
-  return (
-    <FormikConsumer<Values>>
-      {formik => (
-        <FieldInner<Values> {...commonRenderProps(props)} formik={formik} />
-      )}
-    </FormikConsumer>
-  );
+export class Field<P = {}> extends React.Component<Field.Props<P>> {
+  render() {
+    return (
+      <FormikConsumer>
+        {formik => (
+          <FieldInner {...commonRenderProps(this.props)} formik={formik} />
+        )}
+      </FormikConsumer>
+    );
+  }
 }
