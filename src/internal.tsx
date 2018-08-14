@@ -32,14 +32,23 @@ function internalFieldRenderer<P>(
         ...bag,
       });
     }
-    const { innerRef, component, ...rest } = props as Field.DOMNodeFieldProps;
+    const {
+      innerRef,
+      component,
+      validate,
+      ...rest
+    } = props as Field.DOMNodeFieldProps;
     return React.createElement(component, {
       ref: innerRef,
       ...rest,
       ...bag.field,
     });
   }
-  const { innerRef, ...rest } = props as Field.ImplicitInputComponentProps;
+  const {
+    innerRef,
+    validate,
+    ...rest
+  } = props as Field.ImplicitInputComponentProps;
   return React.createElement('input', {
     ref: innerRef,
     ...rest,
