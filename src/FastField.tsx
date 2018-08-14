@@ -242,17 +242,15 @@ export namespace FastField {
     error?: string;
   }
   export type Props<P> = Field.Props<P>;
-  export type Bag = Field.Bag;
+  export type Bag<V = any> = Field.Bag<V>;
 }
 
-export class FastField<P = {}> extends React.Component<FastField.Props<P>> {
-  render() {
-    return (
-      <FormikConsumer>
-        {formik => (
-          <FastFieldInner {...commonRenderProps(this.props)} formik={formik} />
-        )}
-      </FormikConsumer>
-    );
-  }
+export function FastField<P = {}>(props: FastField.Props<P>) {
+  return (
+    <FormikConsumer>
+      {formik => (
+        <FastFieldInner {...commonRenderProps(props as any)} formik={formik} />
+      )}
+    </FormikConsumer>
+  );
 }

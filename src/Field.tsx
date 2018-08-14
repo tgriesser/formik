@@ -17,7 +17,7 @@ export namespace Field {
   /**
    * All props passed down to the custom component / render prop
    */
-  export interface Bag<Values extends object = any> {
+  export interface Bag<Values = any> {
     field: {
       /** Classic React change handler, keyed by input name */
       onChange: (e: React.ChangeEvent<any>) => void;
@@ -149,7 +149,9 @@ export namespace Field {
   export type Props<P> =
     | RenderFieldProps
     | ChildRenderFieldProps
-    | (CustomComponentProps<P> & P)
+    | (CustomComponentProps<P> &
+        // @ts-ignore https://github.com/Microsoft/TypeScript/issues/24560
+        Omit<P, 'form' | 'meta' | 'field'>)
     | DOMNodeFieldProps
     | ImplicitInputComponentProps;
 }
@@ -230,14 +232,12 @@ class FieldInner extends React.Component<Field.InnerCommon>
   }
 }
 
-export class Field<P = {}> extends React.Component<Field.Props<P>> {
-  render() {
-    return (
-      <FormikConsumer>
-        {formik => (
-          <FieldInner {...commonRenderProps(this.props)} formik={formik} />
-        )}
-      </FormikConsumer>
-    );
-  }
+export function Field<P = {}>(props: Field.Props<P>) {
+  return (
+    <FormikConsumer>
+      {formik => (
+        <FieldInner {...commonRenderProps(props as any)} formik={formik} />
+      )}
+    </FormikConsumer>
+  );
 }

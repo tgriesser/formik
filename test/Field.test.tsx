@@ -260,7 +260,6 @@ describe('A <Field />', () => {
             <Field
               placeholder={placeholder}
               name="name"
-              testingAnArbitraryProp="thing"
               render={({ field, form }: Field.Bag) => {
                 const { handleBlur, handleChange } = formikProps;
                 expect(field.name).toBe('name');
@@ -331,7 +330,8 @@ describe('A <Field />', () => {
     it('receives { field, form } props', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<Field.Bag> = props => (actual = props) && null;
+      const Component: React.SFC<Field.Bag & { placeholder: string }> = props =>
+        (actual = props) && null;
 
       ReactDOM.render(
         <TestForm

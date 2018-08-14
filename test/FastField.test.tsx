@@ -310,7 +310,7 @@ describe('A <FastField />', () => {
     it('receives { field, form } props', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<FastField.Props<any>> = props =>
+      const Component: React.SFC<FastField.Bag> = props =>
         (actual = props) && null;
 
       ReactDOM.render(
@@ -335,7 +335,7 @@ describe('A <FastField />', () => {
     it('can resolve bracket paths', () => {
       let actual: any;
       let injected: any;
-      const Component: React.SFC<FastField.Props<any>> = props =>
+      const Component: React.SFC<FastField.Bag> = props =>
         (actual = props) && null;
 
       ReactDOM.render(

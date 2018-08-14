@@ -5,10 +5,7 @@ import { FastField } from './FastField';
 import { Formik } from './Formik';
 
 export function commonRenderProps(
-  props: Field.CommonProps & {
-    render?: (bag: Field.Bag) => React.ReactNode;
-    children?: (bag: Field.Bag) => React.ReactNode;
-  }
+  props: Field.Props<{}>
 ): Field.RenderFieldProps {
   const { name, validate, type, value } = props;
   const render = props.render
