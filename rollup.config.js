@@ -68,7 +68,7 @@ const buildCjs = ({ env }) => ({
   external: external.concat(Object.keys(pkg.dependencies)),
   output: [
     {
-      file: `./dist/${pkg.name}.cjs.${env}.js`,
+      file: `./dist/formik.cjs.${env}.js`,
       format: 'cjs',
       sourcemap: true,
     },
@@ -82,7 +82,7 @@ const buildCjs = ({ env }) => ({
     sourceMaps(),
     filesize(),
   ],
-})
+});
 
 export default [
   buildUmd({ env: 'production' }),
@@ -104,11 +104,6 @@ export default [
         sourcemap: true,
       },
     ],
-    plugins: [
-      resolve(),
-      
-      sourceMaps(),
-      filesize(),
-    ],
+    plugins: [resolve(), sourceMaps(), filesize()],
   },
 ];

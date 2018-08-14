@@ -9,9 +9,5 @@ git:
   depth: 5
 script:
   - yarn test -- --runInBand --no-cache --coverage && yarn size
-deploy:
-  provider: script
-  script: curl -X POST -d '' $NETLIFY_BUILD_HOOK
-  skip_cleanup: true
-  on:
-    branch: master
+notifications:
+  email: false

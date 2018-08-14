@@ -27,7 +27,7 @@ export namespace Formik {
    * Should be always be and object of strings, but any is allowed to support i18n libraries.
    */
   export type Errors<Values> = {
-    [K in keyof Values]?: Values[K] extends object ? Errors<Values[K]> : {}
+    [K in keyof Values]?: Values[K] extends object ? Errors<Values[K]> : any
   };
 
   /**
@@ -158,7 +158,7 @@ export namespace Formik {
     enableReinitialize?: boolean;
   }
 
-  export interface CommmonConfig<Values> {
+  export interface CommmonConfig<Values> extends SharedConfig {
     /**
      * Initial values of the form
      */
@@ -188,9 +188,7 @@ export namespace Formik {
     ) => void | object | Promise<Formik.Errors<Values>>);
   }
 
-  export interface ComponentConfig<V = Formik.Values>
-    extends SharedConfig,
-      CommmonConfig<V> {
+  export interface ComponentConfig<V = Formik.Values> extends CommmonConfig<V> {
     /**
      * Form component to render
      */
@@ -199,9 +197,7 @@ export namespace Formik {
     children?: React.ReactElement<any>;
   }
 
-  export interface RenderConfig<V = Formik.Values>
-    extends SharedConfig,
-      CommmonConfig<V> {
+  export interface RenderConfig<V = Formik.Values> extends CommmonConfig<V> {
     /**
      * Render prop (works like React router's <Route render={props =>} />)
      */
@@ -211,8 +207,7 @@ export namespace Formik {
   }
 
   export interface ChildRenderConfig<V = Formik.Values>
-    extends SharedConfig,
-      CommmonConfig<V> {
+    extends CommmonConfig<V> {
     /**
      * Render prop (works like React router's <Route render={props =>} />)
      */

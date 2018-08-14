@@ -1,13 +1,20 @@
 ![](https://user-images.githubusercontent.com/4060187/27243721-3b5219d0-52b1-11e7-96f1-dae8391a3ef6.png)
 
-[![Build Status](https://travis-ci.org/jaredpalmer/formik.svg?branch=master)](https://travis-ci.org/jaredpalmer/formik)
-[![Stable Release](https://img.shields.io/npm/v/formik.svg)](https://npm.im/formik)
-[![Next Release](https://img.shields.io/npm/v/formik/next.svg)](https://www.npmjs.com/package/formik/v/next)
-[![Blazing Fast](https://badgen.now.sh/badge/speed/blazing%20%F0%9F%94%A5/green)](https://npm.im/formik)
+[![Build Status](https://travis-ci.org/tgriesser/formik.svg?branch=master)](https://travis-ci.org/jaredpalmer/formik)
+[![Stable Release](https://img.shields.io/npm/v/@tgriesser/formik.svg)](https://npm.im/@tgriesser/formik)
+[![Next Release](https://img.shields.io/npm/v/formik/next.svg)](https://www.npmjs.com/package/@tgriesser/formik)
+[![Blazing Fast](https://badgen.now.sh/badge/speed/blazing%20%F0%9F%94%A5/green)](https://npm.im/@tgriesser/formik)
 [![gzip size](http://img.badgesize.io/https://unpkg.com/formik@latest/dist/formik.umd.production.js?compression=gzip)](https://unpkg.com/formik@latest/dist/formik.umd.production.js)
-[![license](https://badgen.now.sh/badge/license/MIT)](./LICENSE)
-[![Discord](https://img.shields.io/discord/102860784329052160.svg?style=flat-square)](https://discord.gg/cU6MCve)
-[![Join the community on Spectrum](https://withspectrum.github.io/badge/badge.svg)](https://spectrum.chat/palmer)
+
+### !! This is a fork !!
+
+This is an opinionated fork of Formik.
+
+- Removes `connect` and `withFormik` HOC's
+- Correctly types `<Field />` & `<Formik />`, utilizing TS 2.9 generics, namespaces, etc.
+- Attempts to remove the render/children/component ambiguities & warnings in favor of TypeScript errors.
+
+There are no guarentees this API will remain the same, semantically versioned, etc. So if you want to use it, fork it :)
 
 ## Overview
 

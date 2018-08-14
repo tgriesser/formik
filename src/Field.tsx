@@ -38,7 +38,7 @@ export namespace Field {
   /**
    * Common interface for all fields, regardless of render method
    */
-  export type CommonProps = {
+  export interface CommonProps {
     /**
      * Field name, required
      */
@@ -54,7 +54,7 @@ export namespace Field {
 
     /** Field value */
     value?: any;
-  };
+  }
 
   export interface ImplicitInputComponentProps
     extends CommonProps,
