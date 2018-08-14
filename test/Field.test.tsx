@@ -13,6 +13,7 @@ interface TestFormValues {
 type TestOmit = 'onSubmit' | 'initialValues';
 
 const TestForm: React.SFC<
+  | Omit<Formik.ChildRenderConfig<TestFormValues>, TestOmit>
   | Omit<Formik.ComponentConfig<TestFormValues>, TestOmit>
   | Omit<Formik.RenderConfig<TestFormValues>, TestOmit>
 > = p => (
@@ -179,13 +180,13 @@ describe('A <Field />', () => {
     });
 
     it('receives { field, form } props', () => {
-      let actual: any; /** FieldProps ;) */
-      let injected: any; /** FieldProps ;) */
+      let actual: any; /** Field.Bag ;) */
+      let injected: any; /** Field.Bag ;) */
       const Component: React.SFC<Field.Bag> = props => (actual = props) && null;
 
       ReactDOM.render(
         <TestForm
-          render={(formikProps: Formik.Props<TestFormValues>) =>
+          render={formikProps =>
             (injected = formikProps) && (
               <Field name="name" component={Component} />
             )
@@ -213,7 +214,7 @@ describe('A <Field />', () => {
     });
 
     it('forwards innerRef to React component', () => {
-      let actual: any;
+      let actual: any; /** Field.Bag ;) */
       const Component: React.SFC<
         Field.Bag & { innerRef: jest.Mock<any> }
       > = props => (actual = props) && null;
@@ -260,7 +261,7 @@ describe('A <Field />', () => {
               placeholder={placeholder}
               name="name"
               testingAnArbitraryProp="thing"
-              render={({ field, form }) => {
+              render={({ field, form }: Field.Bag) => {
                 const { handleBlur, handleChange } = formikProps;
                 expect(field.name).toBe('name');
                 expect(field.value).toBe('jared');
@@ -275,6 +276,139 @@ describe('A <Field />', () => {
         />,
         node
       );
+    });
+  });
+
+  describe('<Field children />', () => {
+    const node = document.createElement('div');
+
+    const TEXT = 'Mrs. Kato';
+
+    afterEach(() => {
+      ReactDOM.unmountComponentAtNode(node);
+    });
+
+    it('renders a function', () => {
+      ReactDOM.render(
+        <TestForm
+          render={() => (
+            <Field name="name" children={() => <div>{TEXT}</div>} />
+          )}
+        />,
+        node
+      );
+
+      expect(node.innerHTML).toContain(TEXT);
+    });
+
+    it('renders a child element', () => {
+      ReactDOM.render(
+        <TestForm
+          render={() => (
+            <Field name="name" component="select">
+              <option value="Jared" label={TEXT} />
+              <option value="Jared" label={TEXT} />
+            </Field>
+          )}
+        />,
+        node
+      );
+
+      expect(node.innerHTML).toContain(TEXT);
+    });
+
+    it('renders a child function', () => {
+      ReactDOM.render(
+        <TestForm
+          render={() => <Field name="name">{() => <div>{TEXT}</div>}</Field>}
+        />,
+        node
+      );
+
+      expect(node.innerHTML).toContain(TEXT);
+    });
+
+    it('receives { field, form } props', () => {
+      let actual: any;
+      let injected: any;
+      const Component: React.SFC<Field.Bag> = props => (actual = props) && null;
+
+      ReactDOM.render(
+        <TestForm
+          children={formikProps =>
+            (injected = formikProps) && (
+              <Field name="name" component={Component} placeholder="hello" />
+            )
+          }
+        />,
+        node
+      );
+      const { handleBlur, handleChange } = injected;
+      expect(actual.field.name).toBe('name');
+      expect(actual.field.onChange).toBe(handleChange);
+      expect(actual.field.onBlur).toBe(handleBlur);
+      expect(actual.field.value).toBe('jared');
+      expect(actual.form).toEqual(injected);
+    });
+
+    it('can resolve bracket paths', () => {
+      let actual: any;
+      let injected: any;
+      const Component: React.SFC<Field.Bag> = props => (actual = props) && null;
+
+      ReactDOM.render(
+        <Formik
+          onSubmit={noop}
+          initialValues={{ user: { superPowers: ['Surging', 'Binding'] } }}
+          children={formikProps =>
+            (injected = formikProps) && (
+              <Field name="user[superPowers][0]" component={Component} />
+            )
+          }
+        />,
+        node
+      );
+      expect(actual.field.value).toBe('Surging');
+    });
+
+    it('can resolve mixed dot and bracket paths', () => {
+      let actual: any;
+      let injected: any;
+      const Component: React.SFC<Field.Bag> = props => (actual = props) && null;
+
+      ReactDOM.render(
+        <Formik
+          onSubmit={noop}
+          initialValues={{ user: { superPowers: ['Surging', 'Binding'] } }}
+          children={formikProps =>
+            (injected = formikProps) && (
+              <Field name="user.superPowers[1]" component={Component} />
+            )
+          }
+        />,
+        node
+      );
+      expect(actual.field.value).toBe('Binding');
+    });
+
+    it('can resolve mixed dot and bracket paths II', () => {
+      let actual: any;
+      let injected: any;
+      const Component: React.SFC<Field.Bag> = props => (actual = props) && null;
+
+      ReactDOM.render(
+        <Formik
+          onSubmit={noop}
+          initialValues={{ user: { superPowers: ['Surging', 'Binding'] } }}
+          children={formikProps =>
+            (injected = formikProps) && (
+              <Field name="user[superPowers].1" component={Component} />
+            )
+          }
+        />,
+        node
+      );
+      expect(actual.field.value).toBe('Binding');
     });
   });
 });

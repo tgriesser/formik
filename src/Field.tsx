@@ -62,6 +62,7 @@ export namespace Field {
     innerRef?: (instance: any) => void;
     component?: never;
     render?: never;
+    children?: React.ReactElement<any> | React.ReactElement<any>[];
   }
 
   export interface InputComponentProps
@@ -71,6 +72,7 @@ export namespace Field {
     innerRef?: (instance: any) => void;
     render?: never;
     component: 'input';
+    children?: React.ReactElement<any> | React.ReactElement<any>[];
   }
 
   export interface SelectComponentProps
@@ -80,6 +82,7 @@ export namespace Field {
     innerRef?: (instance: any) => void;
     render?: never;
     component: 'select';
+    children?: React.ReactElement<any> | React.ReactElement<any>[];
   }
 
   export interface TextareaComponentProps
@@ -92,6 +95,7 @@ export namespace Field {
     innerRef?: (instance: any) => void;
     render?: never;
     component: 'textarea';
+    children?: React.ReactElement<any> | React.ReactElement<any>[];
   }
 
   export interface ButtonComponentProps
@@ -101,6 +105,7 @@ export namespace Field {
     /** Inner ref */
     innerRef?: (instance: any) => void;
     component: 'button';
+    children?: React.ReactElement<any> | React.ReactElement<any>[];
   }
 
   /**

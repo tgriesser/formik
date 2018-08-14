@@ -7,12 +7,15 @@ import { Formik } from './Formik';
 export function commonRenderProps(
   props: Field.CommonProps & {
     render?: (bag: Field.Bag) => React.ReactNode;
+    children?: (bag: Field.Bag) => React.ReactNode;
   }
 ): Field.RenderFieldProps {
   const { name, validate, type, value } = props;
   const render = props.render
     ? props.render
-    : (bag: Field.Bag) => internalFieldRenderer(bag, props);
+    : isFunction(props.children)
+      ? props.children
+      : (bag: Field.Bag) => internalFieldRenderer(bag, props);
   return { name, validate, type, value, render };
 }
 

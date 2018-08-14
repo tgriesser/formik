@@ -45,11 +45,6 @@ export namespace Formik {
   export interface State<Values> {
     /** Form values */
     values: Values;
-    /**
-     * Top level error, in case you need it
-     * @deprecated since 0.8.0
-     */
-    error?: any;
     /** map of field names to specific error for that field */
     errors: Formik.Errors<Values>;
     /** map of field names to whether the field has been touched */
@@ -727,7 +722,6 @@ export class Formik<Values> extends React.Component<
       isValidating: false,
       errors: {},
       touched: {},
-      error: undefined,
       status: undefined,
       values,
       submitCount: 0,

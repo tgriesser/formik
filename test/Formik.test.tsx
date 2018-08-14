@@ -959,7 +959,6 @@ describe('<Formik>', () => {
         { name: 'jared' },
         expect.objectContaining({
           resetForm: expect.any(Function),
-          setError: expect.any(Function),
           setErrors: expect.any(Function),
           setFieldError: expect.any(Function),
           setFieldTouched: expect.any(Function),
@@ -1014,7 +1013,6 @@ describe('<Formik>', () => {
         { name: 'jared' },
         expect.objectContaining({
           resetForm: expect.any(Function),
-          setError: expect.any(Function),
           setErrors: expect.any(Function),
           setFieldError: expect.any(Function),
           setFieldTouched: expect.any(Function),
