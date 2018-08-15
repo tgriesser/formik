@@ -2,11 +2,16 @@ import cloneDeep from 'lodash.clonedeep';
 import toPath from 'lodash.topath';
 import warning from 'warning';
 import { isInteger, isObject } from './predicates';
-import { changeListeners, FormikChangeListener } from './listeners';
+import {
+  changeListeners,
+  mountedFormRegistry,
+  FormikChangeListener,
+} from './listeners';
 
 export function addFormikGlobalListener(fn: FormikChangeListener) {
   if (process.env.NODE_ENV === 'development') {
     changeListeners.push(fn);
+    fn(mountedFormRegistry);
   }
 }
 
