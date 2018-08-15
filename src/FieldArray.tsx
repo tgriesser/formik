@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { getIn, setIn } from './utils';
-import { isFunction } from './internal';
+import { isFunction } from './predicates';
 import { FormikConsumer } from './context';
 import { Formik } from './Formik';
 

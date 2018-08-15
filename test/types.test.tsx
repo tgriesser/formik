@@ -1,4 +1,4 @@
-import { FormikTouched, FormikErrors } from '../src';
+import { Formik } from '../src';
 
 describe('Formik Types', () => {
   describe('FormikTouched', () => {
@@ -10,7 +10,7 @@ describe('Formik Types', () => {
     };
 
     it('it should infer nested object structure of touched property from Values', () => {
-      const touched: FormikTouched<Values> = {
+      const touched: Formik.Touched<Values> = {
         id: true,
         social: { facebook: true },
       };
@@ -27,7 +27,7 @@ describe('Formik Types', () => {
     });
 
     it('it should infer nested object structure of error property from Values', () => {
-      const errors: FormikErrors<Values> = {
+      const errors: Formik.Errors<Values> = {
         id: 'error',
         social: { facebook: 'error' },
       };

@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { FormikConsumer } from './context';
 import { Omit } from './types';
-import { isPromise, getFieldBag, commonRenderProps } from './internal';
+import { getFieldBag, commonRenderProps } from './internal';
 import { Formik } from './Formik';
+import { isPromise } from './predicates';
 
 export namespace Field {
   export interface CommonMethods {

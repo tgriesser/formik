@@ -4,14 +4,9 @@ import warning from 'warning';
 import deepmerge from 'deepmerge';
 import { FormikProvider } from './context';
 import { setIn, setNestedObjectValues, getActiveElement, getIn } from './utils';
-import {
-  isFunction,
-  isNaN,
-  isPromise,
-  isString,
-  validateYupSchema,
-  yupToFormErrors,
-} from './internal';
+import { validateYupSchema, yupToFormErrors } from './internal';
+import { isFunction, isNaN, isPromise, isString } from './predicates';
+import { mountedFormRegistry, changeListeners } from './listeners';
 
 export namespace Formik {
   /**
@@ -309,6 +304,9 @@ export class Formik<Values> extends React.Component<
 
   componentDidMount() {
     this.didMount = true;
+    if (process.env.NODE_ENV === 'development') {
+      mountedFormRegistry.push(this);
+    }
   }
 
   componentWillUnmount() {
@@ -319,6 +317,9 @@ export class Formik<Values> extends React.Component<
     // @see https://github.com/jaredpalmer/formik/issues/597
     // @see https://reactjs.org/blog/2015/12/16/ismounted-antipattern.html
     this.didMount = false;
+    if (process.env.NODE_ENV === 'development') {
+      mountedFormRegistry.splice(mountedFormRegistry.indexOf(this), 1);
+    }
   }
 
   componentDidUpdate(prevProps: Readonly<Formik.Config<Values>>) {
@@ -330,6 +331,9 @@ export class Formik<Values> extends React.Component<
       this.initialValues = this.props.initialValues;
       // @todo refactor to use getDerivedStateFromProps?
       this.resetForm(this.props.initialValues);
+    }
+    if (process.env.NODE_ENV === 'development') {
+      changeListeners.forEach(fn => fn(mountedFormRegistry));
     }
   }
 

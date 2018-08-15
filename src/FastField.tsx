@@ -8,9 +8,8 @@ import {
   commonRenderProps,
   validateYupSchema,
   yupToFormErrors,
-  isFunction,
-  isPromise,
 } from './internal';
+import { isFunction, isPromise } from './predicates';
 
 /** @private Returns whether two objects are deeply equal **excluding** a key / dot path */
 function isEqualExceptForKey(a: any, b: any, path: string) {

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { FieldArray, Formik } from '../src';
-import { isFunction } from '../src/internal';
+import { isFunction } from '../src/predicates';
 
 // tslint:disable-next-line:no-empty
 const noop = () => {};
