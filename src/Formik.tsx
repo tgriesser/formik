@@ -306,6 +306,7 @@ export class Formik<Values> extends React.Component<
     this.didMount = true;
     if (process.env.NODE_ENV === 'development') {
       mountedFormRegistry.push(this);
+      changeListeners.forEach(fn => fn(mountedFormRegistry));
     }
   }
 
@@ -319,6 +320,7 @@ export class Formik<Values> extends React.Component<
     this.didMount = false;
     if (process.env.NODE_ENV === 'development') {
       mountedFormRegistry.splice(mountedFormRegistry.indexOf(this), 1);
+      changeListeners.forEach(fn => fn(mountedFormRegistry));
     }
   }
 
