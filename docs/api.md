@@ -48,9 +48,12 @@ const BasicExample = () => (
 
 ### Formik render methods
 
+There are three ways to render things with `<Formik />`
 There is one way to render things with `<Formik />`
 
+- `<Formik component>`
 - `<Formik render>`
+- `<Formik children>`
 
 ### Formik props
 
@@ -185,6 +188,34 @@ Imperatively call your [`validate`] or [`validateSchema`] depending on what was 
 
 Imperatively call field's [`validate`] function if specified for given field. Formik will use the current field value.
 
+### `component`
+
+```tsx
+<Formik component={ContactForm} />;
+const ContactForm = ({
+ handleSubmit,
+ handleChange,
+ handleBlur,
+ values,
+ errors,
+}) => (
+ <form onSubmit={handleSubmit}>
+   <input
+     type="text"
+     onChange={handleChange}
+     onBlur={handleBlur}
+     value={values.name}
+     name="name"
+   />
+   {errors.name && <div>{errors.name}</div>}
+   <button type="submit">Submit</button>
+ </form>
+};
+```
+
+**Warning:** `<Formik component>` takes precedence over `<Formik render>` so
+don’t use both in the same `<Formik>`.
+
 ### `render: (props: FormikProps<Values>) => ReactNode`
 
 ```tsx
@@ -208,6 +239,31 @@ Imperatively call field's [`validate`] function if specified for given field. Fo
     </form>
   )}
 />
+```
+
+### `children: func`
+
+```tsx
+<Formik children={props => <ContactForm {...props} />} />
+// or...
+<Formik>
+ {({ handleSubmit, handleChange, handleBlur, values, errors }) => (
+   <form onSubmit={handleSubmit}>
+     <input
+       type="text"
+       onChange={handleChange}
+       onBlur={handleBlur}
+       value={values.name}
+       name="name"
+     />
+     {errors.name &&
+       <div>
+         {errors.name}
+       </div>}
+     <button type="submit">Submit</button>
+   </form>
+ )}
+</Formik>
 ```
 
 ### `enableReinitialize?: boolean`

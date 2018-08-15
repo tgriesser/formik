@@ -168,10 +168,22 @@ describe('A <FastField />', () => {
       expect((node.firstChild as HTMLTextAreaElement).name).toBe('name');
     });
 
+    it('renders a child function', () => {
+      ReactDOM.render(
+        <TestForm
+          render={() => (
+            <FastField name="name">{() => <div>{TEXT}</div>}</FastField>
+          )}
+        />,
+        node
+      );
+      expect(node.innerHTML).toContain(TEXT);
+    });
+
     it('receives { field, form } props', () => {
       let actual: any; /** FastField.Props<any> ;) */
       let injected: any; /** FastField.Props<any> ;) */
-      const Component: React.SFC<FastField.Props<any>> = props =>
+      const Component: React.SFC<FastField.Bag> = props =>
         (actual = props) && null;
 
       ReactDOM.render(

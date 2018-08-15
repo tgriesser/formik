@@ -700,14 +700,15 @@ const BasicExample = () => (
 
 #### Formik render methods
 
-There are two ways to render things with `<Formik />`
+There are three ways to render things with `<Formik />`
 
 - `<Formik component>`
 - `<Formik render>`
+- `<Formik children>`
 
 #### Formik props
 
-Both render methods will be passed the same props:
+All three render methods will be passed the same props:
 
 ##### `dirty: boolean`
 
@@ -890,6 +891,31 @@ const ContactForm = ({
     </form>
   )}
 />
+```
+
+#### `children: func`
+
+```tsx
+<Formik children={props => <ContactForm {...props} />} />
+// or...
+<Formik>
+ {({ handleSubmit, handleChange, handleBlur, values, errors }) => (
+   <form onSubmit={handleSubmit}>
+     <input
+       type="text"
+       onChange={handleChange}
+       onBlur={handleBlur}
+       value={values.name}
+       name="name"
+     />
+     {errors.name &&
+       <div>
+         {errors.name}
+       </div>}
+     <button type="submit">Submit</button>
+   </form>
+ )}
+</Formik>
 ```
 
 #### `enableReinitialize?: boolean`
