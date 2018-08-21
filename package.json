@@ -1,7 +1,7 @@
 {
   "name": "@tgriesser/formik",
   "description": "Forms in React, without tears",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "license": "MIT",
   "author": "Tim Griesser <tgriesser@gmail.com>",
   "authors": [
@@ -55,8 +55,6 @@
   },
   "optionalDependencies": {},
   "devDependencies": {
-    "enzyme": "^3.4.4",
-    "enzyme-adapter-react-16": "^1.2.0",
     "@storybook/addon-options": "^3.4.8",
     "@storybook/react": "^3.4.0",
     "@types/enzyme": "^3.1.13",
@@ -73,6 +71,8 @@
     "awesome-typescript-loader": "^3.4.1",
     "cross-env": "5.0.5",
     "doctoc": "^1.3.0",
+    "enzyme": "^3.4.4",
+    "enzyme-adapter-react-16": "^1.2.0",
     "hoist-non-react-statics": "^3.0.1",
     "husky": "0.14.3",
     "jest": "^23.1.0",
