@@ -1,7 +1,7 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { Formik } from '../src';
-import { shallow, mount } from '@pisano/enzyme';
+import { shallow, mount } from 'enzyme';
 import { sleep, noop } from './testHelpers';
 
 jest.spyOn(global.console, 'error');
@@ -869,7 +869,7 @@ describe('<Formik>', () => {
     });
   });
 
-  describe('componentDidUpdate', () => {
+  describe('enableReinitialize', () => {
     let form: any, initialValues: any;
     beforeEach(() => {
       initialValues = {
@@ -877,64 +877,70 @@ describe('<Formik>', () => {
         github: { repoUrl: 'https://github.com/jaredpalmer/formik' },
         watchers: ['ian', 'sam'],
       };
-      form = new Formik({
-        initialValues,
-        onSubmit: jest.fn(),
-        enableReinitialize: true,
-        children: () => null,
-      });
+      form = mount(
+        <Formik
+          initialValues={initialValues}
+          onSubmit={jest.fn()}
+          enableReinitialize={true}
+          children={() => null}
+        />
+      );
+      form.setState({ submitCount: 1 });
       form.resetForm = jest.fn();
     });
 
-    it('should not resetForm if new initialValues are the same as previous', () => {
+    it('should not reset the form if new initialValues are the same as previous', () => {
       const newInitialValues = Object.assign({}, initialValues);
-      form.componentDidUpdate({
+      form.setProps({
         initialValues: newInitialValues,
-        onSubmit: jest.fn(),
       });
-      expect(form.resetForm).not.toHaveBeenCalled();
+      expect(form.state('submitCount')).toEqual(1);
     });
 
-    it('should resetForm if new initialValues are different than previous', () => {
+    it('should reset initialValues if new values are different than previous', () => {
       const newInitialValues = {
         ...initialValues,
         watchers: ['jared', 'ian', 'sam'],
       };
-      form.componentDidUpdate({
+      form.setProps({
         initialValues: newInitialValues,
-        onSubmit: jest.fn(),
       });
-      expect(form.resetForm).toHaveBeenCalled();
+      expect(form.state('submitCount')).toEqual(0);
+      expect(form.state('values')).toEqual(newInitialValues);
+      expect(form.state('initialValues')).toEqual(newInitialValues);
     });
 
-    it('should resetForm if new initialValues are deeply different than previous', () => {
+    it('should reset initialValues if new values are deeply different than previous', () => {
       const newInitialValues = {
         ...initialValues,
         github: { repoUrl: 'different' },
       };
-      form.componentDidUpdate({
+      form.setProps({
         initialValues: newInitialValues,
-        onSubmit: jest.fn(),
       });
-      expect(form.resetForm).toHaveBeenCalled();
+      expect(form.state('submitCount')).toEqual(0);
+      expect(form.state('values')).toEqual(newInitialValues);
+      expect(form.state('initialValues')).toEqual(newInitialValues);
     });
 
     it('should NOT resetForm without enableReinitialize flag', () => {
-      form = new Formik({
-        initialValues,
-        onSubmit: jest.fn(),
-        render: () => null,
-      });
-      form.resetForm = jest.fn();
+      form = mount(
+        <Formik
+          initialValues={initialValues}
+          onSubmit={jest.fn()}
+          children={() => null}
+        />
+      );
+      form.setState({ submitCount: 1 });
       const newInitialValues = {
         ...initialValues,
         watchers: ['jared', 'ian', 'sam'],
       };
-      form.componentDidUpdate({
+      form.setProps({
         initialValues: newInitialValues,
-        onSubmit: jest.fn(),
       });
-      expect(form.resetForm).not.toHaveBeenCalled();
+      expect(form.state('submitCount')).toEqual(1);
+      expect(form.state('initialValues')).not.toEqual(newInitialValues);
     });
   });
 

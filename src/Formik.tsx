@@ -40,6 +40,8 @@ export namespace Formik {
   export interface State<Values> {
     /** Form values */
     values: Values;
+    /** Initial form values */
+    initialValues: Values;
     /** map of field names to specific error for that field */
     errors: Formik.Errors<Values>;
     /** map of field names to whether the field has been touched */
@@ -57,13 +59,11 @@ export namespace Formik {
   /**
    * Formik computed properties. These are read-only.
    */
-  export interface ComputedProps<Values> {
+  export interface ComputedProps {
     /** True if any input has been touched. False otherwise. */
     readonly dirty: boolean;
     /** Result of isInitiallyValid on mount, then whether true values pass validation. */
     readonly isValid: boolean;
-    /** initialValues */
-    readonly initialValues: Values;
   }
 
   /**
@@ -228,7 +228,7 @@ export namespace Formik {
       State<Values>,
       Actions<Values>,
       Handlers,
-      ComputedProps<Values> {
+      ComputedProps {
     registerField(
       name: string,
       fns: {
@@ -259,7 +259,6 @@ export class Formik<Values> extends React.Component<
     enableReinitialize: false,
   };
 
-  initialValues: Values;
   didMount: boolean;
   hcCache: {
     [key: string]: (e: string | React.ChangeEvent<any>) => void;
@@ -273,10 +272,27 @@ export class Formik<Values> extends React.Component<
     };
   };
 
+  static getDerivedStateFromProps(
+    nextProps: Formik.Config<any>,
+    prevState: Formik.State<any>
+  ) {
+    if (
+      nextProps.enableReinitialize &&
+      !isEqual(prevState.initialValues, nextProps.initialValues)
+    ) {
+      return {
+        initialValues: nextProps.initialValues,
+        ...resetFormState(nextProps.initialValues),
+      };
+    }
+    return null;
+  }
+
   constructor(props: Formik.Config<Values>) {
     super(props);
     this.state = {
       values: props.initialValues || ({} as Values),
+      initialValues: props.initialValues || ({} as Partial<Values>),
       errors: {},
       touched: {},
       isSubmitting: false,
@@ -285,7 +301,6 @@ export class Formik<Values> extends React.Component<
     };
     this.didMount = false;
     this.fields = {};
-    this.initialValues = props.initialValues || ({} as Values);
   }
 
   registerField = (
@@ -324,16 +339,7 @@ export class Formik<Values> extends React.Component<
     }
   }
 
-  componentDidUpdate(prevProps: Readonly<Formik.Config<Values>>) {
-    // If the initialValues change, reset the form
-    if (
-      this.props.enableReinitialize &&
-      !isEqual(prevProps.initialValues, this.props.initialValues)
-    ) {
-      this.initialValues = this.props.initialValues;
-      // @todo refactor to use getDerivedStateFromProps?
-      this.resetForm(this.props.initialValues);
-    }
+  componentDidUpdate() {
     if (process.env.NODE_ENV === 'development') {
       changeListeners.forEach(fn => fn(mountedFormRegistry));
     }
@@ -714,19 +720,9 @@ export class Formik<Values> extends React.Component<
   };
 
   resetForm = (nextValues?: Values) => {
-    const values = nextValues ? nextValues : this.props.initialValues;
-
-    this.initialValues = values;
-
-    this.setState({
-      isSubmitting: false,
-      isValidating: false,
-      errors: {},
-      touched: {},
-      status: undefined,
-      values,
-      submitCount: 0,
-    });
+    this.setState(
+      resetFormState<Values>(nextValues ? nextValues : this.state.initialValues)
+    );
   };
 
   handleReset = () => {
@@ -769,7 +765,7 @@ export class Formik<Values> extends React.Component<
 
   getFormikComputedProps = () => {
     const { isInitialValid } = this.props;
-    const dirty = !isEqual(this.initialValues, this.state.values);
+    const dirty = !isEqual(this.state.initialValues, this.state.values);
     return {
       dirty,
       isValid: dirty
@@ -777,7 +773,7 @@ export class Formik<Values> extends React.Component<
         : isInitialValid !== false && isFunction(isInitialValid)
           ? (isInitialValid as (props: this['props']) => boolean)(this.props)
           : (isInitialValid as boolean),
-      initialValues: this.initialValues,
+      initialValues: this.state.initialValues,
     };
   };
 
@@ -822,6 +818,18 @@ export class Formik<Values> extends React.Component<
     }
     return <FormikProvider value={ctx}>{child}</FormikProvider>;
   }
+}
+
+function resetFormState<V>(values: V) {
+  return {
+    isSubmitting: false,
+    isValidating: false,
+    errors: {},
+    touched: {},
+    status: undefined,
+    values,
+    submitCount: 0,
+  };
 }
 
 function warnAboutMissingIdentifier({
