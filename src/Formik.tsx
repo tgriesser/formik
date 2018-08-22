@@ -151,6 +151,8 @@ export namespace Formik {
     isInitialValid?: boolean | ((props: object) => boolean | undefined);
     /** Should Formik reset the form when new initialValues change */
     enableReinitialize?: boolean;
+    /** Tells Formik to validate the component on mount */
+    validateOnLoad?: boolean;
   }
 
   export interface CommmonConfig<Values> extends SharedConfig {
@@ -257,6 +259,7 @@ export class Formik<Values> extends React.Component<
     validateOnBlur: true,
     isInitialValid: false,
     enableReinitialize: false,
+    validateOnLoad: false,
   };
 
   didMount: boolean;
@@ -319,6 +322,9 @@ export class Formik<Values> extends React.Component<
 
   componentDidMount() {
     this.didMount = true;
+    if (this.props.validateOnLoad) {
+      this.runValidations(this.state.values);
+    }
     if (process.env.NODE_ENV === 'development') {
       mountedFormRegistry.push(this);
       changeListeners.forEach(fn => fn(mountedFormRegistry));
