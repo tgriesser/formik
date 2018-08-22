@@ -48,6 +48,11 @@ export namespace WithFormik {
      * throws an error object where that object keys map to corresponding value.
      */
     validate?: (values: Values, props: Props) => void | object | Promise<any>;
+
+    /**
+     * Optional prop to ref the formik object
+     */
+    formikRef?: React.Ref<Formik<Values>>;
   }
 
   export type CompositeComponent<P> =
@@ -81,6 +86,8 @@ export function withFormik<Props, Values extends Formik.Values = any>({
     }
     return val as Values;
   },
+  handleSubmit,
+  formikRef,
   ...config
 }: WithFormik.Config<Props, Values>): WithFormik.ComponentDecorator<
   Props,
@@ -114,7 +121,7 @@ export function withFormik<Props, Values extends Formik.Values = any>({
       };
 
       handleSubmit = (values: Values, actions: Formik.Actions<Values>) => {
-        return config.handleSubmit(values, {
+        return handleSubmit(values, {
           ...actions,
           props: this.props,
         });
@@ -131,6 +138,7 @@ export function withFormik<Props, Values extends Formik.Values = any>({
         return (
           <Formik
             {...config}
+            ref={formikRef}
             validate={config.validate && this.validate}
             validationSchema={config.validationSchema && this.validationSchema}
             initialValues={mapPropsToValues(this.props)}
