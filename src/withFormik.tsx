@@ -36,7 +36,7 @@ export namespace WithFormik {
     /**
      * Reset handler
      */
-    handleReset: (
+    handleReset?: (
       values: Values,
       formikActions: Formik.Actions<Values>
     ) => void;
