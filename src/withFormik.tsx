@@ -34,6 +34,14 @@ export namespace WithFormik {
     handleSubmit: (values: Values, formikBag: FormikBag<Props, Values>) => void;
 
     /**
+     * Reset handler
+     */
+    handleReset: (
+      values: Values,
+      formikActions: Formik.Actions<Values>
+    ) => void;
+
+    /**
      * Map props to the form values
      */
     mapPropsToValues?: (props: Props) => Values;
@@ -141,6 +149,7 @@ export function withFormik<Props, Values extends Formik.Values = any>({
             ref={formikRef}
             validate={config.validate && this.validate}
             validationSchema={config.validationSchema && this.validationSchema}
+            onReset={config.handleReset}
             initialValues={mapPropsToValues(this.props)}
             onSubmit={this.handleSubmit}
             render={this.renderFormComponent}
