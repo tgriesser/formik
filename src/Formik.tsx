@@ -295,7 +295,7 @@ export class Formik<Values> extends React.Component<
     super(props);
     this.state = {
       values: props.initialValues || ({} as Values),
-      initialValues: props.initialValues || ({} as Partial<Values>),
+      initialValues: props.initialValues || ({} as Values),
       errors: {},
       touched: {},
       isSubmitting: false,
